@@ -250,7 +250,7 @@ export class AppComponent implements OnInit {
             return remote.id === remoteFeed.id;
           });
 
-          // if(indexOfData !== -1) return;
+          if(indexOfData !== -1) return;
 
           if (indexOfData < 0) {
             this.pushedData.push(remoteFeed);
