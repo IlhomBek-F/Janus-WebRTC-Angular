@@ -1,0 +1,9 @@
+<h2>Janus WebRTC Test</h2>
+<button (click)="createJanus()">Start</button>
+<video autoPlay playsInline #videoElement></video>
+<button (click)="joinAsRemoteRoom()">Join</button>
+<input type="number" [(ngModel)]="roomId" />
+<button (click)="start_screensharing()">Share screen</button>
+<button (click)="stop_screensharing()">Stop sharing screen</button>
+<!-- <button (click)="destroyRoom()">Leave room</button> -->
+<div id="container"></div>
