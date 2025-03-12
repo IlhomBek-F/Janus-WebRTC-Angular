@@ -200,7 +200,7 @@ export class AppComponent implements OnInit {
         console.debug(" ::: Got a message (subscriber) :::", msg);
         let event = msg["videoroom"];
         if (event) {
-          if (event === "joined") {
+          if (event === "attached") {
             console.log(`subscriber created and attached!`);
             // Subscriber created and attached
             for (let i = 1; i < 6; i++) {
@@ -241,6 +241,9 @@ export class AppComponent implements OnInit {
             (on ? "up" : "down") +
             " now"
         );
+      },
+      onlocaltrack(track, on) {
+        console.log(on)
       },
       onremotetrack: (stream: any) => {
         if (stream.kind === "video") {
@@ -288,7 +291,6 @@ export class AppComponent implements OnInit {
   }
 
   start_screensharing() {
-    // // ogcode  //
     this.pluginHandleRef.createOffer({
       media: {
         video: "screen",
