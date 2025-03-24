@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import Janus from 'janus-gateway';
 import { FormsModule } from '@angular/forms';
+import { JanusUtil } from './utils';
 
 @Component({
   selector: 'app-root',
@@ -291,55 +292,14 @@ export class AppComponent implements OnInit {
   }
 
   start_screensharing() {
-    this.pluginHandleRef.createOffer({
-      media: {
-        video: "screen",
-        audioSend: true,
-        videoRecv: false,
-        videoSend: true,
-        replaceVideo: true,
-      }, // Screen sharing Publishers are sendonly
-      // stream: newstream ,
-      success: (jsep: any) => {
-        console.log("Got publisher SDP!", jsep);
-        var publish = { request: "configure", audio: true, video: true };
-        this.pluginHandleRef.send({ message: publish, jsep: jsep });
-      },
-      error: (error: any) => {
-        console.log("WebRTC error:", error);
-        console.log("WebRTC error... " + error.message);
-      },
-    });
+    JanusUtil.startScreenShare()
   }
 
   stop_screensharing() {
-    this.pluginHandleRef.createOffer({
-      media: { videoSend: true, audioSend: true, replaceVideo: true }, // Screen sharing Publishers are sendonly
-      success: (jsep: any) => {
-        console.log("Got publisher SDP!", jsep);
-        var publish = { request: "configure", audio: true, video: true };
-        this.pluginHandleRef.send({ message: publish, jsep: jsep });
-      },
-      error: function (error: any) {
-        console.log("WebRTC error:", error);
-        console.log("WebRTC error... " + error.message);
-      },
-    });
+    JanusUtil.stopScreenShare()
   }
 
   destroyRoom(id: string) : void {
-    this.pluginHandleRef.send({
-      message: {
-        request: 'leave',
-        room: this.roomId,
-      },
-      success: (response) => {
-        document.getElementById('container')
-        .removeChild(document.getElementById(id))
-      },
-      error: () => {
-        console.log('Error deleting room')
-      }
-    })
+    JanusUtil.destroyRoom()
   }
 }
