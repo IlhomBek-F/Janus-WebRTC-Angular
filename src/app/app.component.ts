@@ -2,7 +2,6 @@ import {
   Component,
   ElementRef,
   OnInit,
-  signal,
   ViewChild,
 } from '@angular/core';
 import Janus from 'janus-gateway';
@@ -21,7 +20,6 @@ export class AppComponent implements OnInit {
   videoElement!: ElementRef<HTMLVideoElement>;
 
   janusRef!: Janus;
-  pluginHandleRef!: any;
   janusRoom!: Janus;
   subsribeMode = false;
   pushedData: any = [];
@@ -48,7 +46,7 @@ export class AppComponent implements OnInit {
             this.janusRef.attach({
               plugin: 'janus.plugin.videoroom',
               success: (pluginHandle: any) => {
-                this.pluginHandleRef = pluginHandle;
+                JanusUtil.setPlugin(pluginHandle);
                 const piblisherOption = {
                   request: this.subsribeMode ? 'join' :'create',
                   ptype: 'publisher',
@@ -78,7 +76,7 @@ export class AppComponent implements OnInit {
                     this.publishOwnFeed(true);
                   }
                   // 🔹 Step 4: Publish Audio/Video
-                  this.pluginHandleRef.send({
+                  JanusUtil.pluginHandler.send({
                     message: { request: 'configure', audio: true, video: true },
                   });
                   if (message["publishers"] !== undefined && message["publishers"] !== null) {
@@ -106,11 +104,11 @@ export class AppComponent implements OnInit {
                 }
 
                 if (jsep) {
-                  this.pluginHandleRef.createAnswer({
+                  JanusUtil.pluginHandler.createAnswer({
                     jsep,
                     media: { audio: true, video: true },
                     success: (jsepAnswer: any) => {
-                      this.pluginHandleRef.send({
+                      JanusUtil.pluginHandler.send({
                         message: {},
                         jsep: jsepAnswer,
                       });
@@ -138,7 +136,7 @@ export class AppComponent implements OnInit {
 
   joinRoom(roomId: number) {
     console.log('Joining room:', roomId);
-    this.pluginHandleRef.send({
+    JanusUtil.pluginHandler.send({
       message: {
         request: 'join',
         room: roomId,
@@ -150,7 +148,7 @@ export class AppComponent implements OnInit {
 
   publishOwnFeed(useAudio: any) {
     // Publish our stream
-      this.pluginHandleRef.createOffer({
+    JanusUtil.pluginHandler.createOffer({
         media: {
           audioRecv: false,
           videoRecv: false,
@@ -165,7 +163,7 @@ export class AppComponent implements OnInit {
             record: false,
             bitrate: 102400
           };
-          this.pluginHandleRef.send({ message: publish, jsep: jsep });
+          JanusUtil.pluginHandler.send({ message: publish, jsep: jsep });
         },
         error: function (error: any) {
           console.error("WebRTC error:", error);

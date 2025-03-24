@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import Janus from 'janus-gateway';
-import { JanusPlugin } from '../core';
+import { JanusPlugin } from '../core/enums';
 
 const serverUrl = 'http://185.221.214.97:8088/janus';
 

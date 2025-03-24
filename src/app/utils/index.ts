@@ -3,11 +3,11 @@ export class JanusUtil {
   static remoteFeedPlugin: any;
   static pluginHandler: any;
 
-  set setPlugin(plugin: any) {
+  static setPlugin(plugin: any) {
     JanusUtil.pluginHandler = plugin;
   }
 
-  set setRoomId(roomId: number) {
+  static setRoomId(roomId: number) {
     JanusUtil.roomId = roomId;
   }
 
