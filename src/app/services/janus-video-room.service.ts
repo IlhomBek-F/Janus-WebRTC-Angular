@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import Janus from 'janus-gateway';
-import { JanusPlugin } from '../core/enums';
 import { JanusUtil } from '../utils';
+import { JanusPluginEnum } from '../core/enums';
 
 const serverUrl = 'http://185.221.214.97:8088/janus';
 
@@ -34,7 +34,7 @@ export class JanusVideoRoomService {
 
   attachPlugin() {
     this.janusRef.attach({
-      plugin: JanusPlugin.VideoRoom,
+      plugin: JanusPluginEnum.VideoRoom,
       success: (plugin: any) => {
         JanusUtil.setPlugin(plugin);
         const publisherOption = {
