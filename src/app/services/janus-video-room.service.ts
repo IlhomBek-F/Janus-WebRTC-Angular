@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import Janus from 'janus-gateway';
 import { JanusPlugin } from '../core/enums';
+import { JanusUtil } from '../utils';
 
 const serverUrl = 'http://185.221.214.97:8088/janus';
 
@@ -35,7 +36,7 @@ export class JanusVideoRoomService {
     this.janusRef.attach({
       plugin: JanusPlugin.VideoRoom,
       success: (plugin: any) => {
-        this.pluginRef = plugin;
+        JanusUtil.setPlugin(plugin);
         const publisherOption = {
           request: 'create',
           ptype: 'publisher',
