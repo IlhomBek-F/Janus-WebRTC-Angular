@@ -55,8 +55,6 @@ static destroyRoom() {
         room: JanusUtil.roomId,
       },
       success: (response) => {
-        document.getElementById('container')
-        .removeChild(document.getElementById(id))
       },
       error: () => {
         console.log('Error deleting room')
