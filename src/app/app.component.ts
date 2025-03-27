@@ -7,11 +7,12 @@ import {
 import Janus from 'janus-gateway';
 import { FormsModule } from '@angular/forms';
 import { JanusUtil } from './utils';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, NzButtonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
