@@ -7,3 +7,9 @@ export enum JanusStreamEnum {
   Audio = '0',
   Video = '1'
 }
+
+export enum UserTypeEnum {
+  Publisher = 'publisher',
+  Subscriber = 'subscriber',
+  Admin = 'admin',
+}
