@@ -15,6 +15,7 @@ export class JanusVideoRoomService {
   userType = UserTypeEnum.Admin; // Default to Admin
 
   localTrack$: Subject<MediaStream> = new Subject<MediaStream>();
+  remoteUserTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
 
   initialJanusInstance() {
     Janus.init({
@@ -47,7 +48,7 @@ export class JanusVideoRoomService {
         const publisherOption = {
           request: 'create',
           ptype: UserTypeEnum.Publisher,
-          display: 'User Admin',
+          display: 'User Admin' + Janus.randomString(3),
           permanent: false, // Set to true if you want it to persist
           publishers: 10, // Max participants
           bitrate: 128000,
@@ -74,6 +75,10 @@ export class JanusVideoRoomService {
           JanusUtil.publishOwnFeed();
         }
 
+        if(message.publishers) {
+          this.createRemotePublisherFeed(message.publishers);
+        }
+
         if(jsep) {
           JanusUtil.pluginHandler.handleRemoteJsep({jsep})
         }
@@ -97,7 +102,7 @@ export class JanusVideoRoomService {
         const publisherOption = {
           request: 'join',
           ptype: UserTypeEnum.Publisher,
-          display: 'User Admin',
+          display: 'User Admin' + Janus.randomString(3),
           permanent: false, // Set to true if you want it to persist
           publishers: 10, // Max participants
           bitrate: 128000,
@@ -120,11 +125,53 @@ export class JanusVideoRoomService {
       },
       onmessage: (message: any, jsep: any) => {
 
+        if(message.publishers) {
+          this.createRemotePublisherFeed(message.publishers);
+        }
+
       },
       onlocaltrack: (track, on) => {
 
       },
     });
+  }
+
+  createRemotePublisherFeed(publishers: any) {
+    publishers.forEach((publisher: any) => {
+      let remoteFeed: any = null;
+
+      this.janusRef.attach({
+        plugin: "janus.plugin.videoroom",
+        success: (pluginHandle: any) => {
+          remoteFeed = pluginHandle;
+          console.log("  -- This is a subscriber");
+          // We wait for the plugin to send us an offer
+          let subscribe = {
+            request: "join",
+            room: this.roomId,
+            ptype: UserTypeEnum.Subscriber,
+          };
+
+          remoteFeed.send({ message: subscribe });
+        },
+        onmessage(message, jsep) {
+
+        },
+        onremotetrack(track, mid, on, metadata) {
+          console.log("  -- Remote track:", track, mid, on, metadata);
+
+          if (track.kind === "video") {
+            let remoteStream = new MediaStream();
+            remoteStream.addTrack(track);
+            this.remoteUserTrack$.next({[publisher.id]: remoteStream});
+          }
+
+        },
+        error: function (error: any) {
+          console.error("  -- Error attaching plugin...", error);
+        },
+    })
+    })
   }
 
   joinRoom(roomId: number) {

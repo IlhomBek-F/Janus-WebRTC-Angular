@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { JanusUtil } from './utils';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { JanusVideoRoomService } from './services/janus-video-room.service';
+import { UserTypeEnum } from './core/enums';
 
 @Component({
   selector: 'app-root',
@@ -295,8 +296,10 @@ export class AppComponent implements OnInit {
   }
 
   joinAsRemoteRoom() {
+    this._videoRoomService.roomId = this.roomId;
+    this._videoRoomService.userType = UserTypeEnum.Publisher;
+    this._videoRoomService.initialJanusInstance()
     this.subsribeMode = true
-    this.createJanus();
   }
 
   start_screensharing() {
