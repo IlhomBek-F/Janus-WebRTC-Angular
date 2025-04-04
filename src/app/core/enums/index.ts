@@ -13,3 +13,13 @@ export enum UserTypeEnum {
   Subscriber = 'subscriber',
   Admin = 'admin',
 }
+
+export enum JanusEventEnum {
+  Attached = 'attached',
+  Joined = 'joined',
+  Created = 'created',
+  Destroyed = 'destroyed',
+  Leaving = 'leaving',
+  Unpublished = 'unpublished',
+  Event = 'event',
+}

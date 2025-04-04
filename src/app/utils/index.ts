@@ -61,4 +61,29 @@ static destroyRoom() {
       }
     })
   }
+
+  static publishOwnFeed() {
+    // Publish our stream
+    JanusUtil.pluginHandler.createOffer({
+        media: {
+          audioRecv: false,
+          videoRecv: false,
+          audioSend: true,
+          videoSend: true,
+        }, // Publishers are sendonly
+        success: (jsep: any) => {
+          const publish = {
+            request: "configure",
+            audio: true,
+            video: true,
+            record: false,
+            bitrate: 102400
+          };
+          JanusUtil.pluginHandler.send({ message: publish, jsep: jsep });
+        },
+        error: function (error: any) {
+          console.error("WebRTC error:", error);
+        },
+      });
+  }
 }

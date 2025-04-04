@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import Janus from 'janus-gateway';
 import { JanusUtil } from '../utils';
-import { JanusPluginEnum, UserTypeEnum } from '../core/enums';
+import { JanusEventEnum, JanusPluginEnum, UserTypeEnum } from '../core/enums';
+import { Subject } from 'rxjs';
 
-// const serverUrl = 'http://185.221.214.97:8088/janus';
-const serverUrl = 'http://34.57.163.85:8088/janus';
+const serverUrl = 'http://185.221.214.97:8088/janus';
+// const serverUrl = 'http://34.57.163.85:8088/janus';
 
 @Injectable({ providedIn: 'root' })
 export class JanusVideoRoomService {
@@ -12,6 +13,8 @@ export class JanusVideoRoomService {
   pluginRef: any;
   roomId: number;
   userType = UserTypeEnum.Admin; // Default to Admin
+
+  localTrack$: Subject<MediaStream> = new Subject<MediaStream>();
 
   initialJanusInstance() {
     Janus.init({
@@ -31,6 +34,58 @@ export class JanusVideoRoomService {
     return new Janus({
       server: serverUrl,
       success: () => this.userType === UserTypeEnum.Admin ? this.attachAdminPlugin() : this.attachUserPlugin(),
+      error: (error) => console.error('Janus initialization failed', error),
+      destroyed: () => console.log('Janus instance destroyed'),
+    });
+  }
+
+  attachAdminPlugin() {
+    this.janusRef.attach({
+      plugin: JanusPluginEnum.VideoRoom,
+      success: (plugin: any) => {
+        JanusUtil.setPlugin(plugin);
+        const publisherOption = {
+          request: 'create',
+          ptype: UserTypeEnum.Publisher,
+          display: 'User Admin',
+          permanent: false, // Set to true if you want it to persist
+          publishers: 10, // Max participants
+          bitrate: 128000,
+          fir_freq: 10,
+          audiocodec: 'opus',
+          videocodec: 'vp8',
+        };
+
+        plugin.send({
+          message: publisherOption,
+          success: (message: any) => {
+            this.roomId = message.room;
+            console.log('Joining room:', this.roomId);
+            this.joinRoom(this.roomId);
+          },
+        });
+      },
+      error(error) {
+        console.error('Error attaching plugin:', error);
+      },
+      onmessage: (message: any, jsep: any) => {
+        if(message.videoroom === JanusEventEnum.Joined) {
+          console.log('Successfully joined room!');
+          JanusUtil.publishOwnFeed();
+        }
+
+        if(jsep) {
+          JanusUtil.pluginHandler.handleRemoteJsep({jsep})
+        }
+      },
+      onlocaltrack: (track, on) => {
+        if (track.kind === "video") {
+          let localStream = new MediaStream();
+          localStream.addTrack(track);
+          this.localTrack$.next(localStream);
+          // Janus.attachMediaStream(this.videoElement.nativeElement, localStream)
+        }
+      },
     });
   }
 
@@ -41,7 +96,7 @@ export class JanusVideoRoomService {
         JanusUtil.setPlugin(plugin);
         const publisherOption = {
           request: 'join',
-          ptype: 'publisher',
+          ptype: UserTypeEnum.Publisher,
           display: 'User Admin',
           permanent: false, // Set to true if you want it to persist
           publishers: 10, // Max participants
@@ -72,45 +127,6 @@ export class JanusVideoRoomService {
     });
   }
 
-
-  attachAdminPlugin() {
-    this.janusRef.attach({
-      plugin: JanusPluginEnum.VideoRoom,
-      success: (plugin: any) => {
-        JanusUtil.setPlugin(plugin);
-        const publisherOption = {
-          request: 'create',
-          ptype: 'publisher',
-          display: 'User Admin',
-          permanent: false, // Set to true if you want it to persist
-          publishers: 10, // Max participants
-          bitrate: 128000,
-          fir_freq: 10,
-          audiocodec: 'opus',
-          videocodec: 'vp8',
-        };
-
-        plugin.send({
-          message: publisherOption,
-          success: (message: any) => {
-            this.roomId = message.room;
-            console.log('Joining room:', this.roomId);
-            this.joinRoom(this.roomId);
-          },
-        });
-      },
-      error(error) {
-        console.error('Error attaching plugin:', error);
-      },
-      onmessage: (message: any, jsep: any) => {
-
-      },
-      onlocaltrack: (track, on) => {
-
-      },
-    });
-  }
-
   joinRoom(roomId: number) {
     console.log('Joining room:', roomId);
     JanusUtil.pluginHandler.send({
@@ -121,5 +137,8 @@ export class JanusVideoRoomService {
         display: 'AngularUser',
       },
     });
+  }
+
+  confiureJsep(jsep: any) {
   }
 }
