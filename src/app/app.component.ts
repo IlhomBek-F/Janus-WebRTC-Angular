@@ -298,7 +298,7 @@ export class AppComponent implements OnInit {
   joinAsRemoteRoom() {
     this._videoRoomService.roomId = this.roomId;
     this._videoRoomService.userType = UserTypeEnum.Publisher;
-    this._videoRoomService.initialJanusInstance()
+    this.createJanus()
     this.subsribeMode = true
   }
 
