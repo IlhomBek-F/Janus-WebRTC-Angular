@@ -181,7 +181,7 @@ export class JanusVideoRoomService {
         request: 'join',
         room: roomId,
         ptype: 'publisher',
-        display: 'AngularUser',
+        display: 'AngularUser' + Janus.randomString(4),
       },
     });
   }
