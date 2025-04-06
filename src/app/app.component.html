@@ -7,3 +7,7 @@
 <button (click)="stop_screensharing()">Stop sharing screen</button>
 <div id="container" class="text-[red-500]"></div>
 <button nz-button nzType="primary">Primary</button>
+
+  @for (item of remoteUserStream; track $index) {
+    <video autoPlay playsInline #remoteVideo [srcObject]="item.stream"></video>
+   }

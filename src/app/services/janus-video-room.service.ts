@@ -124,15 +124,6 @@ export class JanusVideoRoomService {
         success: (pluginHandle: any) => {
           remoteFeed = pluginHandle;
           console.log("  -- This is a subscriber");
-          // We wait for the plugin to send us an offer
-          // let subscribe = {
-          //   request: "join",
-          //   room: this.roomId,
-          //   ptype: UserTypeEnum.Subscriber,
-          // };
-
-          // remoteFeed.send({ message: subscribe });
-
           publisher.streams.forEach((stream: any) => {
             if (
               stream.type === "video" &&
@@ -166,10 +157,28 @@ export class JanusVideoRoomService {
           });
 
         },
-        onmessage(message, jsep) {
+        onmessage: (message, jsep) => {
 
+          if(jsep) {
+            remoteFeed.createAnswer({
+              jsep: jsep,
+              tracks: [{ type: "data" }],
+              media: { audio: true, video: true },
+              success: (jsepAnswer: any) => {
+                Janus.debug("Got SDP!", jsep);
+                remoteFeed.send({
+                  message: { request: "start", room: this.roomId },
+                  jsep: jsepAnswer,
+                });
+              },
+              error: (error: any) => {
+                Janus.error("WebRTC error:", error);
+                alert("WebRTC error... " + error.message);
+              },
+            });
+          }
         },
-        onremotetrack(track, mid, on, metadata) {
+        onremotetrack: (track, mid, on, metadata) => {
           console.log("  -- Remote track:", track, mid, on, metadata);
 
           if (track.kind === "video") {

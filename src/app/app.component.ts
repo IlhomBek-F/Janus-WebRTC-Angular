@@ -10,11 +10,13 @@ import { JanusUtil } from './utils';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { JanusVideoRoomService } from './services/janus-video-room.service';
 import { UserTypeEnum } from './core/enums';
+import { map, Observable } from 'rxjs';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, NzButtonModule],
+  imports: [FormsModule, NzButtonModule, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
@@ -32,12 +34,23 @@ export class AppComponent implements OnInit {
   remoteFeed!: any;
   feeds: any = [];
 
-  constructor(private _videoRoomService: JanusVideoRoomService) {}
+  remoteUserStream!: { id: string; stream: MediaStream }[];
+
+  constructor(private _videoRoomService: JanusVideoRoomService) {
+  }
 
   ngOnInit() {
     this._videoRoomService.localTrack$.subscribe((stream: MediaStream) => {
       this.videoElement.nativeElement.srcObject = stream;
       this.videoElement.nativeElement.play();
+    });
+
+    this._videoRoomService.remoteUserTrack$.pipe(
+      map((streamObj) => {
+        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value}));
+      })
+    ).subscribe((streamObj) => {
+      this.remoteUserStream = streamObj;
     })
   }
 
