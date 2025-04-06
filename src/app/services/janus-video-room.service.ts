@@ -45,24 +45,21 @@ export class JanusVideoRoomService {
       plugin: JanusPluginEnum.VideoRoom,
       success: (plugin: any) => {
         JanusUtil.setPlugin(plugin);
-        const publisherOption = {
-          request: 'create',
-          ptype: UserTypeEnum.Publisher,
-          display: 'User Admin' + Janus.randomString(3),
-          permanent: false, // Set to true if you want it to persist
-          publishers: 10, // Max participants
-          bitrate: 128000,
-          fir_freq: 10,
-          audiocodec: 'opus',
-          videocodec: 'vp8',
-        };
-
         plugin.send({
-          message: publisherOption,
-          success: (message: any) => {
-            this.roomId = message.room;
-            console.log('Joining room:', this.roomId);
-            this.joinRoom(this.roomId);
+          message: {
+            request: "create",
+            ptype: "publisher",
+            publishers: 10,
+            audiolevel_event: true,
+            audio_active_packets: 7,
+            display: "User Assalom" + Janus.randomString(4),
+          },
+          success: (response: any) => {
+            this.roomId = response.room;
+            this.joinRoom(response.room);
+          },
+          error: (error: any) => {
+            console.error("🚨 Ошибка создания комнаты:", error);
           },
         });
       },
@@ -99,26 +96,7 @@ export class JanusVideoRoomService {
       plugin: JanusPluginEnum.VideoRoom,
       success: (plugin: any) => {
         JanusUtil.setPlugin(plugin);
-        const publisherOption = {
-          request: 'join',
-          ptype: UserTypeEnum.Publisher,
-          display: 'User Admin' + Janus.randomString(3),
-          permanent: false, // Set to true if you want it to persist
-          publishers: 10, // Max participants
-          bitrate: 128000,
-          fir_freq: 10,
-          audiocodec: 'opus',
-          videocodec: 'vp8',
-          room: this.roomId,
-        };
-
-        plugin.send({
-          message: publisherOption,
-          success: (message: any) => {
-            console.log('Joining room:', this.roomId);
-            this.joinRoom(this.roomId);
-          },
-        });
+        this.joinRoom(this.roomId);
       },
       error(error) {
         console.error('Error attaching plugin:', error);
@@ -139,6 +117,7 @@ export class JanusVideoRoomService {
   createRemotePublisherFeed(publishers: any) {
     publishers.forEach((publisher: any) => {
       let remoteFeed: any = null;
+      let subscription: any = [];
 
       this.janusRef.attach({
         plugin: "janus.plugin.videoroom",
@@ -146,13 +125,46 @@ export class JanusVideoRoomService {
           remoteFeed = pluginHandle;
           console.log("  -- This is a subscriber");
           // We wait for the plugin to send us an offer
-          let subscribe = {
-            request: "join",
-            room: this.roomId,
-            ptype: UserTypeEnum.Subscriber,
-          };
+          // let subscribe = {
+          //   request: "join",
+          //   room: this.roomId,
+          //   ptype: UserTypeEnum.Subscriber,
+          // };
 
-          remoteFeed.send({ message: subscribe });
+          // remoteFeed.send({ message: subscribe });
+
+          publisher.streams.forEach((stream: any) => {
+            if (
+              stream.type === "video" &&
+              Janus.webRTCAdapter.browserDetails.browser === "safari" &&
+              (stream.codec === "vp9" ||
+                (stream.codec === "vp8" && !Janus.safariVp8))
+            ) {
+              console.warn(
+                "Publisher is using " +
+                  stream.codec.toUpperCase +
+                  ", but Safari doesn't support it: disabling video stream #" +
+                  stream.mindex
+              );
+            } else {
+              subscription.push({
+                feed: publisher.id, // This is mandatory
+                mid: stream.mid, // This is optional (all streams, if missing)
+              });
+            }
+          });
+
+          remoteFeed.send({
+            message: {
+              request: "join",
+              room: this.roomId, // ID комнаты
+              ptype: UserTypeEnum.Subscriber,
+              streams: subscription,
+              audiolevel_event: true, // 🔥 Enable audio level detection
+              audio_active_packets: 7, // How quickly it detects speech
+            },
+          });
+
         },
         onmessage(message, jsep) {
 
@@ -181,6 +193,8 @@ export class JanusVideoRoomService {
         request: 'join',
         room: roomId,
         ptype: 'publisher',
+        audiolevel_event: true,
+        audio_active_packets: 7,
         display: 'AngularUser' + Janus.randomString(4),
       },
     });
