@@ -12,6 +12,7 @@ export enum UserTypeEnum {
   Publisher = 'publisher',
   Subscriber = 'subscriber',
   Admin = 'admin',
+  ScreenShare = 'screenshare',
 }
 
 export enum JanusEventEnum {

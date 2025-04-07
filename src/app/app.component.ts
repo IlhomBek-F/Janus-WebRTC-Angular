@@ -24,6 +24,9 @@ export class AppComponent implements OnInit {
   @ViewChild('videoElement', { static: true })
   videoElement!: ElementRef<HTMLVideoElement>;
 
+  @ViewChild('screenShare', { static: true })
+  screenShare!: ElementRef<HTMLVideoElement>;
+
   janusRef!: Janus;
   janusRoom!: Janus;
   subsribeMode = false;
@@ -54,108 +57,8 @@ export class AppComponent implements OnInit {
     })
   }
 
-  createJanus() {
+  createJanus(stream?: MediaStream) {
     this._videoRoomService.initialJanusInstance()
-    // Janus.init({
-    //   debug: 'all',
-    //   callback: () => {
-    //     if (!Janus.isWebrtcSupported()) {
-    //       alert('No WebRTC support... ');
-    //       return;
-    //     }
-
-    //     this.janusRef = new Janus({
-    //       server: 'http://34.57.163.85/janus',
-    //       success: (message: any) => {
-    //         this.janusRef.attach({
-    //           plugin: 'janus.plugin.videoroom',
-    //           success: (pluginHandle: any) => {
-    //             JanusUtil.setPlugin(pluginHandle);
-    //             const piblisherOption = {
-    //               request: this.subsribeMode ? 'join' :'create',
-    //               ptype: 'publisher',
-    //               display: 'AngularUser',
-    //               permanent: false, // Set to true if you want it to persist
-    //               publishers: 10, // Max participants
-    //               bitrate: 128000,
-    //               fir_freq: 10,
-    //               audiocodec: 'opus',
-    //               videocodec: 'vp8',
-    //               ...(this.subsribeMode ? {room: this.roomId} : {})
-    //             }
-
-    //               pluginHandle.send({
-    //                 message:  piblisherOption,
-    //                 success: (message: any) => {
-    //                   this.roomId = message.room
-    //                   this.joinRoom(message.room);
-    //                 },
-    //               });
-    //           },
-    //           onmessage: (message: any, jsep) => {
-    //             if (message.videoroom === 'joined') {
-    //               console.log('Successfully joined room!');
-
-    //               if(!this.subsribeMode) {
-    //                 this.publishOwnFeed(true);
-    //               }
-    //               // 🔹 Step 4: Publish Audio/Video
-    //               JanusUtil.pluginHandler.send({
-    //                 message: { request: 'configure', audio: true, video: true },
-    //               });
-    //               if (message["publishers"] !== undefined && message["publishers"] !== null) {
-    //                 let list = message["publishers"];
-    //                 for (let f in list) {
-    //                   let id = list[f]["id"];
-    //                   let display = list[f]["display"];
-    //                   this.createRemoteFeed(id, display);
-    //                 }
-    //               }
-    //             }else  if(message.videoroom === 'event') {
-    //               if (
-    //                 message["publishers"] !== undefined &&
-    //                 message["publishers"] !== null
-    //               ) {
-    //                 let list = message["publishers"];
-    //                 console.log("Got a list of available publishers/feeds:");
-    //                 console.log(list);
-    //                 for (let f in list) {
-    //                   let id = list[f]["id"];
-    //                   let display = list[f]["display"];
-    //                   this.createRemoteFeed(id, display);
-    //                 }
-    //               }
-    //             }
-
-    //             if (jsep) {
-    //               JanusUtil.pluginHandler.createAnswer({
-    //                 jsep,
-    //                 media: { audio: true, video: true },
-    //                 success: (jsepAnswer: any) => {
-    //                   JanusUtil.pluginHandler.send({
-    //                     message: {},
-    //                     jsep: jsepAnswer,
-    //                   });
-    //                 },
-    //                 error: (error: any) =>
-    //                   console.error('WebRTC error:', error),
-    //               });
-    //             }
-    //           },
-    //           onlocaltrack: (track, on) => {
-    //             if (track.kind === "video") {
-    //               let localStream = new MediaStream();
-    //               localStream.addTrack(track);
-    //               Janus.attachMediaStream(this.videoElement.nativeElement, localStream)
-    //             }
-    //           },
-    //           error: (error) => console.error('Plugin error:', error),
-    //         });
-    //       },
-    //       error: (error) => console.error('Janus initialization failed', error),
-    //     });
-    //   },
-    // });
   }
 
   joinRoom(roomId: number) {
@@ -316,11 +219,29 @@ export class AppComponent implements OnInit {
   }
 
   start_screensharing() {
-    JanusUtil.startScreenShare()
+    // JanusUtil.startScreenShare();
+    navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+    .then((stream) => {
+      this.listenForScreenShareEnd(stream);
+      localStorage.setItem('screenShare', JSON.stringify(stream))
+      setTimeout(() => {
+        // this.screenShare.nativeElement.srcObject = JSON.parse(localStorage.getItem('screenShare')!);
+        console.log(JSON.parse(localStorage.getItem('screenShare')!))
+        this.screenShare.nativeElement.play();
+      }, 4000)
+    }).catch(console.log)
+
   }
 
   stop_screensharing() {
     JanusUtil.stopScreenShare()
+  }
+
+  listenForScreenShareEnd(stream) {
+    stream.getVideoTracks()[0].addEventListener("ended", () => {
+      console.log("Stop button pressed in browser");
+ this.screenShare.nativeElement.srcObject
+    });
   }
 
   destroyRoom(id: string) : void {

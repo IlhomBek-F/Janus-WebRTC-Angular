@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import Janus from 'janus-gateway';
 import { JanusUtil } from '../utils';
 import { JanusEventEnum, JanusPluginEnum, UserTypeEnum } from '../core/enums';
@@ -13,7 +13,7 @@ export class JanusVideoRoomService {
   pluginRef: any;
   roomId: number;
   userType = UserTypeEnum.Admin; // Default to Admin
-
+  screenStream = signal(null);
   localTrack$: Subject<MediaStream> = new Subject<MediaStream>();
   remoteUserTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
 
@@ -150,7 +150,7 @@ export class JanusVideoRoomService {
               request: "join",
               room: this.roomId, // ID комнаты
               ptype: UserTypeEnum.Subscriber,
-              streams: subscription,
+              streams: this.screenStream,
               audiolevel_event: true, // 🔥 Enable audio level detection
               audio_active_packets: 7, // How quickly it detects speech
             },
