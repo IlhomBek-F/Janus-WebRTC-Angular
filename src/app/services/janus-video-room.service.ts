@@ -56,6 +56,7 @@ export class JanusVideoRoomService {
           },
           success: (response: any) => {
             this.roomId = response.room;
+            JanusUtil.setRoomId(this.roomId);
             this.joinRoom(response.room);
           },
           error: (error: any) => {
@@ -150,7 +151,7 @@ export class JanusVideoRoomService {
               request: "join",
               room: this.roomId, // ID комнаты
               ptype: UserTypeEnum.Subscriber,
-              streams: this.screenStream,
+              streams: subscription,
               audiolevel_event: true, // 🔥 Enable audio level detection
               audio_active_packets: 7, // How quickly it detects speech
             },

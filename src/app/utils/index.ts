@@ -86,4 +86,28 @@ static destroyRoom() {
         },
       });
   }
+
+  static toggleRemoteUserMic(userId: string, mute) {
+    JanusUtil.pluginHandler.send({
+      message: {
+        request: "moderate",
+        room: this.roomId,
+        id: +userId,
+        mid: "0",
+        mute
+      },
+    });
+  }
+
+  static toggleRemoteUserCam(userId: string, mute) {
+    JanusUtil.pluginHandler.send({
+      message: {
+        request: "moderate",
+        room: this.roomId,
+        id: +userId,
+        mid: "1",
+        mute
+      },
+    });
+  }
 }
