@@ -79,14 +79,12 @@ export class AppComponent implements OnInit {
     });
   }
 
-
   joinAsRemoteRoom() {
     this._videoRoomService.roomId = this.roomId;
     this._videoRoomService.userType = UserTypeEnum.Publisher;
     this.createJanus()
     this.subsribeMode = true
   }
-
 
   destroyRoom(id: string) : void {
     JanusUtil.destroyRoom()
@@ -100,5 +98,10 @@ export class AppComponent implements OnInit {
   toggleRemoteUserCam(user: any) {
     this.remoteUserMediaState[user.id].isCamMute = !this.remoteUserMediaState[user.id].isCamMute;
     JanusUtil.toggleRemoteUserCam(user.id, this.remoteUserMediaState[user.id].isCamMute);
+  }
+
+  shareScreen() {
+    this._videoRoomService.userType = UserTypeEnum.ScreenShare;
+    this._videoRoomService.initialJanusInstance();
   }
 }

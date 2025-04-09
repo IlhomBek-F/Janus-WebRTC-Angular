@@ -27,6 +27,9 @@ export class JanusVideoRoomService {
         }
 
         this.janusRef = this.createJanusInstance();
+        if(this.userType === UserTypeEnum.ScreenShare) {
+          JanusUtil.setJanusInstance(this.janusRef);
+        }
       },
     });
   }
@@ -34,7 +37,7 @@ export class JanusVideoRoomService {
   createJanusInstance() {
     return new Janus({
       server: serverUrl,
-      success: () => this.userType === UserTypeEnum.Admin ? this.attachAdminPlugin() : this.attachUserPlugin(),
+      success: () => this.userType === UserTypeEnum.Admin ? this.attachAdminPlugin() : this.userType === UserTypeEnum.Publisher ? this.attachUserPlugin() : JanusUtil.startScreenShare(),
       error: (error) => console.error('Janus initialization failed', error),
       destroyed: () => console.log('Janus instance destroyed'),
     });
@@ -57,7 +60,7 @@ export class JanusVideoRoomService {
           success: (response: any) => {
             this.roomId = response.room;
             JanusUtil.setRoomId(this.roomId);
-            this.joinRoom(response.room);
+            this.joinRoom(this.roomId);
           },
           error: (error: any) => {
             console.error("🚨 Ошибка создания комнаты:", error);
