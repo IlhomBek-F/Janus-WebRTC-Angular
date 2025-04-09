@@ -86,24 +86,16 @@ static destroyRoom() {
   }
 
   static async startScreenShare() {
-      var displayMediaOptions = {
-        video: {
-          // Removed 'cursor' as it is not a valid property for MediaTrackConstraints
-        },
-        audio: false,
-      };
-
-      var stream = await navigator.mediaDevices.getDisplayMedia();
-      this.selectScreenSource(stream);
+      this.selectScreenSource();
   }
 
-  static selectScreenSource(stream) {
-    this.publishScreen(stream);
+  static selectScreenSource() {
+    this.publishScreen();
     this.screenSources = [];
   }
 
-  static publishScreen(stream) {
-    this.listenForScreenShareEnd(stream);
+  static publishScreen() {
+    // this.listenForScreenShareEnd(stream);
     this.registerScreenUsername();
 
     this.janusRef.attach({
@@ -139,7 +131,6 @@ static destroyRoom() {
             // this.myPrivateScreenId = msg["private_id"];
 
               JanusUtil.screenSharePlugin.createOffer({
-                stream: stream,
                 media: {
                   video: 'screen',
                   audioSend: true,
