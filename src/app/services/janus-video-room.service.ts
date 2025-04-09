@@ -191,7 +191,7 @@ export class JanusVideoRoomService {
             let remoteStream = new MediaStream();
             remoteStream.addTrack(track);
 
-            if(publisher.metadata.isScreenShare) {
+            if(publisher.metadata?.isScreenShare) {
               this.screenShareTrack$.next(remoteStream)
             }else {
               this.remoteUserTrack$.next({[publisher.id]: remoteStream});
