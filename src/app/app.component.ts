@@ -61,6 +61,15 @@ export class AppComponent implements OnInit {
           }
         })
     })
+
+    this._videoRoomService.screenShareTrack$.subscribe((stream: any) => {
+
+      if(this.screenShare.nativeElement.srcObject) {
+        (this.screenShare.nativeElement.srcObject as MediaStream).addTrack(stream);
+      } else {
+        this.screenShare.nativeElement.srcObject = stream;
+      }
+    })
   }
 
   createJanus() {
@@ -103,5 +112,11 @@ export class AppComponent implements OnInit {
   shareScreen() {
     this._videoRoomService.userType = UserTypeEnum.ScreenShare;
     this._videoRoomService.initialJanusInstance();
+  }
+
+  stopShareScreen() {
+    JanusUtil.endScreenShare(() => {
+      this.screenShare.nativeElement.srcObject = null;
+    })
   }
 }

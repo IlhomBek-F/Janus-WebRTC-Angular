@@ -16,6 +16,7 @@ export class JanusVideoRoomService {
   screenStream = signal(null);
   localTrack$: Subject<MediaStream> = new Subject<MediaStream>();
   remoteUserTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
+  screenShareTrack$: Subject<MediaStream> = new Subject();
 
   initialJanusInstance() {
     Janus.init({
@@ -53,8 +54,8 @@ export class JanusVideoRoomService {
             request: "create",
             ptype: "publisher",
             publishers: 10,
-            audiolevel_event: true,
-            audio_active_packets: 7,
+            // audiolevel_event: true,
+            // audio_active_packets: 7,
             display: "User Assalom" + Janus.randomString(4),
           },
           success: (response: any) => {
@@ -155,8 +156,8 @@ export class JanusVideoRoomService {
               room: this.roomId, // ID комнаты
               ptype: UserTypeEnum.Subscriber,
               streams: subscription,
-              audiolevel_event: true, // 🔥 Enable audio level detection
-              audio_active_packets: 7, // How quickly it detects speech
+              // audiolevel_event: true, // 🔥 Enable audio level detection
+              // audio_active_packets: 7, // How quickly it detects speech
             },
           });
 
@@ -185,10 +186,16 @@ export class JanusVideoRoomService {
         onremotetrack: (track, mid, on, metadata) => {
           console.log("  -- Remote track:", track, mid, on, metadata);
 
+
           if (track.kind === "video") {
             let remoteStream = new MediaStream();
             remoteStream.addTrack(track);
-            this.remoteUserTrack$.next({[publisher.id]: remoteStream});
+
+            if(publisher.metadata.isScreenShare) {
+              this.screenShareTrack$.next(remoteStream)
+            }else {
+              this.remoteUserTrack$.next({[publisher.id]: remoteStream});
+            }
           }
 
         },
@@ -211,8 +218,5 @@ export class JanusVideoRoomService {
         display: 'AngularUser' + Janus.randomString(4),
       },
     });
-  }
-
-  confiureJsep(jsep: any) {
   }
 }

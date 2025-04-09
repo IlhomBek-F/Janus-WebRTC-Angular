@@ -96,7 +96,7 @@ static destroyRoom() {
 
   static publishScreen() {
     // this.listenForScreenShareEnd(stream);
-    this.registerScreenUsername();
+    // this.registerScreenUsername();
 
     this.janusRef.attach({
       plugin: "janus.plugin.videoroom",
@@ -108,6 +108,7 @@ static destroyRoom() {
           request: "join",
           room: JanusUtil.roomId,
           ptype: "publisher",
+          metadata: {isScreenShare: true},
           // private_id: this.myPrivateScreenId,
           display: JanusUtil.screenName + Janus.randomString(4),
           quality: 0,
@@ -216,11 +217,11 @@ static destroyRoom() {
   static listenForScreenShareEnd(stream) {
     stream.getVideoTracks()[0].addEventListener("ended", () => {
       console.log("Stop button pressed in browser");
-      this.endScreenShare();
+      this.endScreenShare(() => {});
     });
   }
 
- static endScreenShare() {
+ static endScreenShare(onSuccess) {
     // this.screenButtonBusy = true;
     const unpublish = {
       request: "unpublish",
@@ -228,6 +229,7 @@ static destroyRoom() {
     JanusUtil.screenSharePlugin.send({
       message: unpublish,
       success: () => {
+        onSuccess()
         // this.localScreenShare = false;
         // this.screenButtonBusy = false;
 

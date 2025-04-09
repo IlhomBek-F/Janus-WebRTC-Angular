@@ -1,9 +1,10 @@
 <h2>Janus WebRTC Test</h2>
 <button (click)="createJanus()">Start</button>
-<video autoPlay playsInline #videoElement></video>
-<video autoPlay playsInline #screenShare></video>
+<video autoPlay playsInline #videoElement class="host"></video>
+<video autoPlay playsInline #screenShare class="screen-share"></video>
 <button (click)="joinAsRemoteRoom()">Join</button>
 <button (click)="shareScreen()">share screen</button>
+<button (click)="stopShareScreen()">stop share screen</button>
 <input type="number" [(ngModel)]="roomId" />
 <div id="container" class=" text-[red-500]"></div>
   @for (item of remoteUserStream; track $index) {
