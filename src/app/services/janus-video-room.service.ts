@@ -108,6 +108,12 @@ export class JanusVideoRoomService {
       },
       onmessage: (message: any, jsep: any) => {
 
+        if(message.unpublished) {
+          if(message.metadata?.isScreenShare) {
+            this.screenShareTrack$.next(null);
+          }
+        }
+
         if(message.publishers) {
           this.createRemotePublisherFeed(message.publishers);
         }
