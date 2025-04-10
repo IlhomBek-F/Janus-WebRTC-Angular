@@ -54,8 +54,8 @@ export class JanusVideoRoomService {
             request: "create",
             ptype: "publisher",
             publishers: 10,
-            // audiolevel_event: true,
-            // audio_active_packets: 7,
+            audiolevel_event: true,
+            audio_active_packets: 7,
             display: "User Assalom" + Janus.randomString(4),
           },
           success: (response: any) => {
@@ -162,8 +162,8 @@ export class JanusVideoRoomService {
               room: this.roomId, // ID комнаты
               ptype: UserTypeEnum.Subscriber,
               streams: subscription,
-              // audiolevel_event: true, // 🔥 Enable audio level detection
-              // audio_active_packets: 7, // How quickly it detects speech
+              audiolevel_event: true, // 🔥 Enable audio level detection
+              audio_active_packets: 7, // How quickly it detects speech
             },
           });
 

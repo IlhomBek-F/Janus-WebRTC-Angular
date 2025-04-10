@@ -44,11 +44,19 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.handleLocalUserTrack();
+    this.handleRemoteUserTrack();
+    this.handleShareScreenTrack()
+  }
+
+  handleLocalUserTrack() {
     this._videoRoomService.localTrack$.subscribe((stream: MediaStream) => {
       this.videoElement.nativeElement.srcObject = stream;
       this.videoElement.nativeElement.play();
     });
+  }
 
+  handleRemoteUserTrack() {
     this._videoRoomService.remoteUserTrack$.pipe(
       map((streamObj) => {
         return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value}));
@@ -61,9 +69,10 @@ export class AppComponent implements OnInit {
           }
         })
     })
+  }
 
+  handleShareScreenTrack() {
     this._videoRoomService.screenShareTrack$.subscribe((stream: any) => {
-
       if(this.screenShare.nativeElement.srcObject) {
         (this.screenShare.nativeElement.srcObject as MediaStream).addTrack(stream);
       } else {
