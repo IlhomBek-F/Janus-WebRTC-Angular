@@ -52,7 +52,7 @@ export class JanusVideoRoomService {
         plugin.send({
           message: {
             request: "create",
-            ptype: "publisher",
+            ptype: UserTypeEnum.Publisher,
             publishers: 10,
             audiolevel_event: true,
             audio_active_packets: 7,
@@ -90,7 +90,6 @@ export class JanusVideoRoomService {
           let localStream = new MediaStream();
           localStream.addTrack(track);
           this.localTrack$.next(localStream);
-          // Janus.attachMediaStream(this.videoElement.nativeElement, localStream)
         }
       },
     });
@@ -192,7 +191,6 @@ export class JanusVideoRoomService {
         onremotetrack: (track, mid, on, metadata) => {
           console.log("  -- Remote track:", track, mid, on, metadata);
 
-
           if (track.kind === "video") {
             let remoteStream = new MediaStream();
             remoteStream.addTrack(track);
@@ -218,7 +216,7 @@ export class JanusVideoRoomService {
       message: {
         request: 'join',
         room: roomId,
-        ptype: 'publisher',
+        ptype: UserTypeEnum.Publisher,
         audiolevel_event: true,
         audio_active_packets: 7,
         display: 'AngularUser' + Janus.randomString(4),

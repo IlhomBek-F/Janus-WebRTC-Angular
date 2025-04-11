@@ -10,7 +10,7 @@ import { JanusUtil } from './utils';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { JanusVideoRoomService } from './services/janus-video-room.service';
 import { UserTypeEnum } from './core/enums';
-import { map, Observable } from 'rxjs';
+import { map } from 'rxjs';
 import { CommonModule } from '@angular/common';
 
 @Component({

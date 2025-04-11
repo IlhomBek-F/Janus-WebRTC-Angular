@@ -36,26 +36,23 @@ static destroyRoom() {
     })
   }
 
-  static publishOwnFeed() {
+  static publishOwnFeed(audio = true, video = true) {
     // Publish our stream
     JanusUtil.pluginHandler.createOffer({
-        media: {
-          audioRecv: false,
-          videoRecv: false,
-          audioSend: true,
-          videoSend: true,
-        }, // Publishers are sendonly
         success: (jsep: any) => {
           const publish = {
             request: "configure",
-            audio: true,
-            video: true,
+            audio,
+            video,
             record: false,
             bitrate: 102400
           };
           JanusUtil.pluginHandler.send({ message: publish, jsep: jsep });
         },
         error: function (error: any) {
+           if(audio) {
+             JanusUtil.publishOwnFeed(false, false)
+           }
           console.error("WebRTC error:", error);
         },
       });
@@ -95,9 +92,6 @@ static destroyRoom() {
   }
 
   static publishScreen() {
-    // this.listenForScreenShareEnd(stream);
-    // this.registerScreenUsername();
-
     this.janusRef.attach({
       plugin: "janus.plugin.videoroom",
       opaqueId: JanusUtil.screenName + Janus.randomString(4),
@@ -109,7 +103,6 @@ static destroyRoom() {
           room: JanusUtil.roomId,
           ptype: "publisher",
           metadata: {isScreenShare: true},
-          // private_id: this.myPrivateScreenId,
           display: JanusUtil.screenName + Janus.randomString(4),
           quality: 0,
         };
@@ -230,16 +223,6 @@ static destroyRoom() {
       message: unpublish,
       success: () => {
         onSuccess()
-        // this.localScreenShare = false;
-        // this.screenButtonBusy = false;
-
-        // this.localScreenStream.getTracks().forEach((track) => track.stop());
-
-        // this.localScreenStream = null;
-        // this.miniScreen.srcObject = null;
-        // this.miniScreen.classList.add("hidden");
-        // this.screenShare = null;
-        // this.screenVideoElement = null;
       },
     });
   }
