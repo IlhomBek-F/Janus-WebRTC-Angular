@@ -12,11 +12,14 @@ import { JanusVideoRoomService } from './services/janus-video-room.service';
 import { UserTypeEnum } from './core/enums';
 import { map } from 'rxjs';
 import { CommonModule } from '@angular/common';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, NzButtonModule, CommonModule],
+  imports: [NzIconModule,NzInputModule,NzToolTipModule, FormsModule, NzButtonModule, CommonModule, ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
@@ -81,7 +84,7 @@ export class AppComponent implements OnInit {
     })
   }
 
-  createJanus() {
+  createRoom() {
     this._videoRoomService.initialJanusInstance()
   }
 
@@ -100,7 +103,7 @@ export class AppComponent implements OnInit {
   joinAsRemoteRoom() {
     this._videoRoomService.roomId = this.roomId;
     this._videoRoomService.userType = UserTypeEnum.Publisher;
-    this.createJanus()
+    this.createRoom()
     this.subsribeMode = true
   }
 

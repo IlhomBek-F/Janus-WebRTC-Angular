@@ -1,5 +1,14 @@
 
-<button (click)="createJanus()">Start</button>
+<header class="size-full max-h-16 shadow-md flex justify-center">
+  <div class=" flex justify-between gap-2 items-center max-w-xl">
+    <button nz-button nzType="primary" (click)="createRoom()">Create a room</button>
+    <nz-input-group >
+      <input type="text" placeholder="room number..." nz-input />
+    </nz-input-group>
+    <button nz-button nzType="primary" (click)="joinAsRemoteRoom()">Join a room</button>
+  </div>
+</header>
+
 <video autoPlay playsInline #videoElement class="host"></video>
 <video autoPlay playsInline #screenShare class="screen-share"></video>
 <button (click)="joinAsRemoteRoom()">Join</button>
