@@ -93,7 +93,7 @@ export class AppComponent implements OnInit {
     JanusUtil.pluginHandler.send({
       message: {
         request: 'join',
-        room: roomId,
+        room: +roomId,
         ptype: 'publisher',
         display: 'AngularUser' + Janus.randomString(3),
       },
@@ -101,7 +101,7 @@ export class AppComponent implements OnInit {
   }
 
   joinAsRemoteRoom() {
-    this._videoRoomService.roomId = this.roomId;
+    this._videoRoomService.roomId = +this.roomId;
     this._videoRoomService.userType = UserTypeEnum.Publisher;
     this.createRoom()
     this.subsribeMode = true

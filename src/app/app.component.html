@@ -3,7 +3,7 @@
   <div class=" flex justify-between gap-2 items-center max-w-xl">
     <button nz-button nzType="primary" (click)="createRoom()">Create a room</button>
     <nz-input-group >
-      <input type="text" placeholder="room number..." nz-input />
+      <input type="text" placeholder="room number..." nz-input [(ngModel)]="roomId"/>
     </nz-input-group>
     <button nz-button nzType="primary" (click)="joinAsRemoteRoom()">Join a room</button>
   </div>

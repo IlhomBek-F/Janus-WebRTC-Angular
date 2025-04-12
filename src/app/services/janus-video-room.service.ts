@@ -49,6 +49,7 @@ export class JanusVideoRoomService {
       plugin: JanusPluginEnum.VideoRoom,
       success: (plugin: any) => {
         JanusUtil.setPlugin(plugin);
+
         plugin.send({
           message: {
             request: "create",
@@ -74,7 +75,7 @@ export class JanusVideoRoomService {
       onmessage: (message: any, jsep: any) => {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
-          JanusUtil.publishOwnFeed();
+        JanusUtil.publishOwnFeed();
         }
 
         if(message.publishers) {
@@ -106,7 +107,10 @@ export class JanusVideoRoomService {
         console.error('Error attaching plugin:', error);
       },
       onmessage: (message: any, jsep: any) => {
-
+        if(message.videoroom === JanusEventEnum.Joined) {
+          console.log('Successfully joined room!');
+        JanusUtil.publishOwnFeed(true, true);
+        }
         if(message.unpublished) {
           if(message.metadata?.isScreenShare) {
             this.screenShareTrack$.next(null);
@@ -119,7 +123,11 @@ export class JanusVideoRoomService {
 
       },
       onlocaltrack: (track, on) => {
-
+        if (track.kind === "video") {
+          let localStream = new MediaStream();
+          localStream.addTrack(track);
+          this.localTrack$.next(localStream);
+        }
       },
     });
   }
@@ -155,6 +163,28 @@ export class JanusVideoRoomService {
             }
           });
 
+          remoteFeed.createOffer({
+            media: {
+              audioRecv: true, // We're sending, not receiving
+              videoRecv: true,
+              audioSend: true,
+              videoSend: true
+            },
+              success: (jseps: any) => {
+                const publish = {
+                  request: "configure",
+                  audio: true,
+                  video: true,
+                  record: false,
+                  bitrate: 102400
+                };
+                remoteFeed.send({ message: publish, jsep: jseps });
+              },
+              error: function (error: any) {
+                console.error("WebRTC error:", error);
+              },
+            });
+
           remoteFeed.send({
             message: {
               request: "join",
@@ -168,7 +198,6 @@ export class JanusVideoRoomService {
 
         },
         onmessage: (message, jsep) => {
-
           if(jsep) {
             remoteFeed.createAnswer({
               jsep: jsep,
