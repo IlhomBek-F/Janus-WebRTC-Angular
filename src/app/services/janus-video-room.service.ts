@@ -28,9 +28,6 @@ export class JanusVideoRoomService {
         }
 
         this.janusRef = this.createJanusInstance();
-        if(this.userType === UserTypeEnum.ScreenShare) {
-          JanusUtil.setJanusInstance(this.janusRef);
-        }
       },
     });
   }
@@ -38,7 +35,7 @@ export class JanusVideoRoomService {
   createJanusInstance() {
     return new Janus({
       server: serverUrl,
-      success: () => this.userType === UserTypeEnum.Admin ? this.attachAdminPlugin() : this.userType === UserTypeEnum.Publisher ? this.attachUserPlugin() : JanusUtil.startScreenShare(),
+      success: () => this.userType === UserTypeEnum.Admin ? this.attachAdminPlugin() : this.attachUserPlugin(),
       error: (error) => console.error('Janus initialization failed', error),
       destroyed: () => console.log('Janus instance destroyed'),
     });
@@ -109,7 +106,7 @@ export class JanusVideoRoomService {
       onmessage: (message: any, jsep: any) => {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
-        JanusUtil.publishOwnFeed(true, true);
+          JanusUtil.publishOwnFeed(true, true);
         }
         if(message.unpublished) {
           if(message.metadata?.isScreenShare) {
@@ -168,13 +165,13 @@ export class JanusVideoRoomService {
               audioRecv: true, // We're sending, not receiving
               videoRecv: true,
               audioSend: true,
-              videoSend: true
+              videoSend: false
             },
               success: (jseps: any) => {
                 const publish = {
                   request: "configure",
                   audio: true,
-                  video: true,
+                  video: false,
                   record: false,
                   bitrate: 102400
                 };

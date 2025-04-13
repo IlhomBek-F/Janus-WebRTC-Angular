@@ -36,14 +36,14 @@ static destroyRoom() {
     })
   }
 
-  static publishOwnFeed(audio = true, video = false) {
+  static publishOwnFeed(audio = true, video = true) {
     // Publish our stream
     JanusUtil.pluginHandler.createOffer({
       media: {
         audioRecv: true, // We're sending, not receiving
         videoRecv: true,
         audioSend: audio,
-        videoSend: video
+        videoSend: true
       },
         success: (jsep: any) => {
           const publish = {
@@ -57,7 +57,7 @@ static destroyRoom() {
         },
         error: function (error: any) {
            if(audio) {
-             JanusUtil.publishOwnFeed(true, false)
+             JanusUtil.publishOwnFeed(true, true)
            }
           console.error("WebRTC error:", error);
         },
