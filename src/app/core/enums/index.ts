@@ -23,4 +23,6 @@ export enum JanusEventEnum {
   Leaving = 'leaving',
   Unpublished = 'unpublished',
   Event = 'event',
+  Talking = 'talking',
+  StopedTalking = 'stopped-talking'
 }

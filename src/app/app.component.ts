@@ -40,8 +40,8 @@ export class AppComponent implements OnInit {
   remoteFeed!: any;
   feeds: any = [];
 
-  remoteUserStream!: { id: string; stream: MediaStream }[];
-  remoteUserAudioStream!: { id: string; stream: MediaStream }[];
+  remoteUserStream!: { id: string; stream: MediaStream, talking: boolean }[];
+  remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
 
   isLoading = false;
@@ -53,7 +53,8 @@ export class AppComponent implements OnInit {
   ngOnInit() {
     this.handleLocalUserTrack();
     this.handleRemoteUserTrack();
-    this.handleShareScreenTrack()
+    this.handleShareScreenTrack();
+    this.handleUserTalkingStatus();
   }
 
   onSuccessStream() {
@@ -71,7 +72,7 @@ export class AppComponent implements OnInit {
   handleRemoteUserTrack() {
     this._videoRoomService.remoteUserTrack$.pipe(
       map((streamObj) => {
-        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value}));
+        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value, talking: false}));
       })
     ).subscribe((streamObj) => {
       this.remoteUserStream = streamObj;
@@ -84,7 +85,7 @@ export class AppComponent implements OnInit {
 
     this._videoRoomService.remoteUserAudioTrack$.pipe(
       map((streamObj) => {
-        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value}));
+        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value, talking: false}));
       })
     ).subscribe((streamObj) => {
        this.remoteUserAudioStream = streamObj;
@@ -99,6 +100,16 @@ export class AppComponent implements OnInit {
         this.screenShare.nativeElement.srcObject = stream;
       }
     })
+  }
+
+  handleUserTalkingStatus() {
+    this._videoRoomService.userTalkingStatus$
+     .subscribe(({id, status}) => {
+      this.remoteUserStream = this.remoteUserStream.map((userData) => {
+         userData.talking = +userData.id === id ? status : userData.talking;
+         return userData;
+      })
+     })
   }
 
   createRoom() {

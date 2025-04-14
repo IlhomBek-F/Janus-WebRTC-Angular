@@ -18,6 +18,7 @@ export class JanusVideoRoomService {
   remoteUserTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
   screenShareTrack$: Subject<MediaStream> = new Subject();
   remoteUserAudioTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
+  userTalkingStatus$: Subject<{id: number, status: boolean}> = new Subject<{id: number, status: boolean}>();
   onSuccessStream: Function;
 
   initialJanusInstance(onSuccessStream) {
@@ -111,8 +112,16 @@ export class JanusVideoRoomService {
       onmessage: (message: any, jsep: any) => {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
+          this.onSuccessStream();
           JanusUtil.publishOwnFeed();
         }
+
+        if(message.videoroom === JanusEventEnum.Talking) {
+          this.userTalkingStatus$.next({id: message.id, status: true})
+        }else if(message.videoroom === JanusEventEnum.StopedTalking) {
+          this.userTalkingStatus$.next({id: message.id, status: false})
+        }
+
         if(message.unpublished) {
           if(message.metadata?.isScreenShare) {
             this.screenShareTrack$.next(null);
