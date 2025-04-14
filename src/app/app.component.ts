@@ -44,6 +44,9 @@ export class AppComponent implements OnInit {
   remoteUserAudioStream!: { id: string; stream: MediaStream }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
 
+  isLoading = false;
+  isJoining = false;
+
   constructor(private _videoRoomService: JanusVideoRoomService) {
   }
 
@@ -51,6 +54,11 @@ export class AppComponent implements OnInit {
     this.handleLocalUserTrack();
     this.handleRemoteUserTrack();
     this.handleShareScreenTrack()
+  }
+
+  onSuccessStream() {
+    this.isLoading = false;
+    this.isJoining = false;
   }
 
   handleLocalUserTrack() {
@@ -94,7 +102,9 @@ export class AppComponent implements OnInit {
   }
 
   createRoom() {
-    this._videoRoomService.initialJanusInstance()
+    this.isLoading = !this.subsribeMode;
+    this.isJoining = this.subsribeMode;
+    this._videoRoomService.initialJanusInstance(this.onSuccessStream.bind(this))
   }
 
   joinRoom(roomId: number) {
@@ -112,8 +122,8 @@ export class AppComponent implements OnInit {
   joinAsRemoteRoom() {
     this._videoRoomService.roomId = +this.roomId;
     this._videoRoomService.userType = UserTypeEnum.Publisher;
-    this.createRoom()
     this.subsribeMode = true
+    this.createRoom()
   }
 
   destroyRoom(id: string) : void {
@@ -132,7 +142,7 @@ export class AppComponent implements OnInit {
 
   shareScreen() {
     this._videoRoomService.userType = UserTypeEnum.ScreenShare;
-    this._videoRoomService.initialJanusInstance();
+    this._videoRoomService.initialJanusInstance(this.onSuccessStream);
   }
 
   stopShareScreen() {
