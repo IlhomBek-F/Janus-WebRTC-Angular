@@ -36,32 +36,56 @@ static destroyRoom() {
     })
   }
 
-  static publishOwnFeed(audio = true, video = true) {
+  static publishOwnFeed() {
     // Publish our stream
     JanusUtil.pluginHandler.createOffer({
       media: {
         audioRecv: true, // We're sending, not receiving
         videoRecv: true,
-        audioSend: audio,
+        audioSend: true,
         videoSend: true
       },
         success: (jsep: any) => {
           const publish = {
             request: "configure",
-            audio,
-            video,
+            audio: true,
+            video: true,
             record: false,
             bitrate: 102400
           };
           JanusUtil.pluginHandler.send({ message: publish, jsep: jsep });
         },
-        error: function (error: any) {
-           if(audio) {
-             JanusUtil.publishOwnFeed(true, true)
-           }
+        error: (error: any) => {
+          this.publishOwnFeedWithoutCamera()
           console.error("WebRTC error:", error);
         },
       });
+  }
+
+  private static publishOwnFeedWithoutCamera() {
+    JanusUtil.pluginHandler.createOffer({
+      media: {
+        audioSend: true,
+        videoSend: false,
+        videoRecv: false,
+      }, // Screen sharing Publishers are sendonly
+      success: (jsep) => {
+        Janus.debug("Got publisher SDP!", jsep);
+        const publish = {
+          request: "configure",
+          audio: true,
+          video: false,
+        };
+        JanusUtil.pluginHandler.send({
+          message: publish,
+          jsep: jsep,
+        });
+      },
+      error: (error) => {
+        Janus.error("WebRTC error:", error);
+        console.log("WebRTC error... " + error.message);
+      },
+    });
   }
 
   static toggleRemoteUserMic(userId: string, mute) {

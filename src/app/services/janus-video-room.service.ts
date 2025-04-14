@@ -17,6 +17,7 @@ export class JanusVideoRoomService {
   localTrack$: Subject<MediaStream> = new Subject<MediaStream>();
   remoteUserTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
   screenShareTrack$: Subject<MediaStream> = new Subject();
+  remoteUserAudioTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
 
   initialJanusInstance() {
     Janus.init({
@@ -106,7 +107,7 @@ export class JanusVideoRoomService {
       onmessage: (message: any, jsep: any) => {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
-          JanusUtil.publishOwnFeed(true, true);
+          JanusUtil.publishOwnFeed();
         }
         if(message.unpublished) {
           if(message.metadata?.isScreenShare) {
@@ -160,28 +161,6 @@ export class JanusVideoRoomService {
             }
           });
 
-          remoteFeed.createOffer({
-            media: {
-              audioRecv: true, // We're sending, not receiving
-              videoRecv: true,
-              audioSend: true,
-              videoSend: false
-            },
-              success: (jseps: any) => {
-                const publish = {
-                  request: "configure",
-                  audio: true,
-                  video: false,
-                  record: false,
-                  bitrate: 102400
-                };
-                remoteFeed.send({ message: publish, jsep: jseps });
-              },
-              error: function (error: any) {
-                console.error("WebRTC error:", error);
-              },
-            });
-
           remoteFeed.send({
             message: {
               request: "join",
@@ -199,7 +178,7 @@ export class JanusVideoRoomService {
             remoteFeed.createAnswer({
               jsep: jsep,
               tracks: [{ type: "data" }],
-              media: { audio: true, video: true },
+              media: { audio: true, video: false },
               success: (jsepAnswer: any) => {
                 Janus.debug("Got SDP!", jsep);
                 remoteFeed.send({
@@ -226,8 +205,12 @@ export class JanusVideoRoomService {
             }else {
               this.remoteUserTrack$.next({[publisher.id]: remoteStream});
             }
-          }
+          } else if(track.kind === 'audio') {
+            let remoteStream = new MediaStream();
+            remoteStream.addTrack(track);
 
+            this.remoteUserAudioTrack$.next({[publisher.id]: remoteStream})
+          }
         },
         error: function (error: any) {
           console.error("  -- Error attaching plugin...", error);

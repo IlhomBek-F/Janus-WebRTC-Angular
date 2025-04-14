@@ -6,6 +6,7 @@
       <input type="text" placeholder="room number..." nz-input [(ngModel)]="roomId"/>
     </nz-input-group>
     <button nz-button nzType="primary" (click)="joinAsRemoteRoom()">Join a room</button>
+    <button nz-button nzType="primary" (click)="joinWithoutCam()">Join without camera</button>
   </div>
 </header>
 
@@ -21,5 +22,13 @@
       <video autoPlay playsInline #remoteVideo [srcObject]="item.stream"></video>
       <button (click)="toggleRemoteUserMic(item)">Mic off</button>
       <button (click)="toggleRemoteUserCam(item)">Cam on</button>
+    </div>
+  }
+
+  @for (item of remoteUserAudioStream; track $index) {
+    <h1>{{item.id}}</h1>
+    <div class=" flex flex-col">
+      <audio autoPlay playsInline [srcObject]="item.stream"></audio>
+      <button (click)="toggleRemoteUserMic(item)">Mic off</button>
     </div>
   }

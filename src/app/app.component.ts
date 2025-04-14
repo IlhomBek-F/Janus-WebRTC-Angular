@@ -41,6 +41,7 @@ export class AppComponent implements OnInit {
   feeds: any = [];
 
   remoteUserStream!: { id: string; stream: MediaStream }[];
+  remoteUserAudioStream!: { id: string; stream: MediaStream }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
 
   constructor(private _videoRoomService: JanusVideoRoomService) {
@@ -71,6 +72,14 @@ export class AppComponent implements OnInit {
             this.remoteUserMediaState[user.id] = {isCamMute: false, isMicMute: false}
           }
         })
+    })
+
+    this._videoRoomService.remoteUserAudioTrack$.pipe(
+      map((streamObj) => {
+        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value}));
+      })
+    ).subscribe((streamObj) => {
+       this.remoteUserAudioStream = streamObj;
     })
   }
 
@@ -130,5 +139,10 @@ export class AppComponent implements OnInit {
     JanusUtil.endScreenShare(() => {
       this.screenShare.nativeElement.srcObject = null;
     })
+  }
+
+  joinWithoutCam() {
+    this._videoRoomService.roomId = +this.roomId;
+    this._videoRoomService.joinWithoutCam()
   }
 }
