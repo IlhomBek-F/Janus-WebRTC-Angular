@@ -140,9 +140,4 @@ export class AppComponent implements OnInit {
       this.screenShare.nativeElement.srcObject = null;
     })
   }
-
-  joinWithoutCam() {
-    this._videoRoomService.roomId = +this.roomId;
-    this._videoRoomService.joinWithoutCam()
-  }
 }
