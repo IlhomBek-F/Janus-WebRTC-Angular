@@ -9,26 +9,28 @@
   </div>
 </header>
 
-<!-- <video autoPlay playsInline #screenShare class="screen-share"></video> -->
 <div id="container" class="bg-[red]"></div>
 <div class="flex flex-wrap items-center m-3 gap-3">
-  <video autoPlay playsInline #videoElement class="w-[372px] h-[280px] rounded-md"></video>
+  <div>
+    <video autoPlay playsInline #videoElement class="w-[372px] h-[280px] rounded-md"></video>
+    @if (videoElement.srcObject) {
+      <div class="flex gap-1">
+        <button nz-button nzType="primary" nz-tooltip class="w-full"><i class="pi pi-microphone text-[20px]"></i></button>
+        <button nz-button nzType="primary" class="w-full"><i class="pi pi-camera text-[20px]"></i></button>
+        <button nz-button nzType="primary" class="w-full"><i class="pi pi-desktop text-[20px]"></i></button>
+        <button nz-button nzType="primary" class="w-full"><i class="pi pi-sign-out text-[20px]"></i></button>
+      </div>
+    }
+  </div>
   @for (item of remoteUserStream; track $index) {
-    <div class=" flex flex-col">
+    <div>
       <video autoPlay playsInline #remoteVideo [srcObject]="item.stream" class="w-[372px] h-[280px] rounded-md" [ngClass]="{'outline-2 outline-double outline-blue-800': item.talking}"></video>
-      <button nz-button nzType="primary"><nz-icon nzType="cloud-download" /></button>
-
-      <!-- <button (click)="toggleRemoteUserMic(item)">Mic off</button> -->
-      <!-- <button (click)="toggleRemoteUserCam(item)">Cam on</button> -->
+      <div class="flex gap-1">
+        <button nz-button nzType="primary" class="w-full"><i class="pi pi-microphone text-[20px]"></i></button>
+        <button nz-button nzType="primary" class="w-full"><i class="pi pi-camera text-[20px]"></i></button>
+        <button nz-button nzType="primary" class="w-full"><i class="pi pi-desktop text-[20px]"></i></button>
+        <button nz-button nzType="primary" class="w-full"><i class="pi pi-sign-out text-[20px]"></i></button>
+      </div>
     </div>
   }
 </div>
-
-
-  @for (item of remoteUserAudioStream; track $index) {
-    <h1>{{item.id}}</h1>
-    <div class=" flex flex-col">
-      <audio autoPlay playsInline [srcObject]="item.stream"></audio>
-      <button (click)="toggleRemoteUserMic(item)">Mic off</button>
-    </div>
-  }

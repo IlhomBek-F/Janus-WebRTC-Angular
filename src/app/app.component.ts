@@ -46,7 +46,6 @@ export class AppComponent implements OnInit {
 
   isLoading = false;
   isJoining = false;
-
   constructor(private _videoRoomService: JanusVideoRoomService) {
   }
 
@@ -65,7 +64,6 @@ export class AppComponent implements OnInit {
   handleLocalUserTrack() {
     this._videoRoomService.localTrack$.subscribe((stream: MediaStream) => {
       this.videoElement.nativeElement.srcObject = stream;
-      this.videoElement.nativeElement.play();
     });
   }
 
