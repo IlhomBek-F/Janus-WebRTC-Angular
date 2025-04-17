@@ -16,6 +16,8 @@
   @for (item of remoteUserStream; track $index) {
     <div class=" flex flex-col">
       <video autoPlay playsInline #remoteVideo [srcObject]="item.stream" class="w-[372px] h-[280px] rounded-md" [ngClass]="{'outline-2 outline-double outline-blue-800': item.talking}"></video>
+      <button nz-button nzType="primary"><nz-icon nzType="cloud-download" /></button>
+
       <!-- <button (click)="toggleRemoteUserMic(item)">Mic off</button> -->
       <!-- <button (click)="toggleRemoteUserCam(item)">Cam on</button> -->
     </div>
