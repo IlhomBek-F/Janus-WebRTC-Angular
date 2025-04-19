@@ -35,8 +35,6 @@ export class AppComponent implements OnInit {
 
   janusRef!: Janus;
   janusRoom!: Janus;
-  subsribeMode = false;
-  pushedData: any = [];
   remotePushedData = [];
 
   roomId: number;
@@ -143,7 +141,6 @@ export class AppComponent implements OnInit {
 
     this._videoRoomService.roomId = +this.roomId;
     this._videoRoomService.userType = UserTypeEnum.Publisher;
-    this.subsribeMode = true;
     this.isJoining = true;
     this.initialJanus()
   }
