@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  inject,
   OnInit,
   ViewChild,
 } from '@angular/core';
@@ -15,11 +16,12 @@ import { CommonModule } from '@angular/common';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzMessageService } from 'ng-zorro-antd/message';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NzIconModule,NzInputModule,NzToolTipModule, FormsModule, NzButtonModule, CommonModule, ],
+  imports: [NzIconModule,NzInputModule,NzToolTipModule, FormsModule, NzButtonModule, CommonModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
@@ -29,6 +31,7 @@ export class AppComponent implements OnInit {
 
   @ViewChild('screenShare', { static: true })
   screenShare!: ElementRef<HTMLVideoElement>;
+  private readonly message = inject(NzMessageService);
 
   janusRef!: Janus;
   janusRoom!: Janus;
@@ -36,7 +39,9 @@ export class AppComponent implements OnInit {
   pushedData: any = [];
   remotePushedData = [];
 
-  roomId = 0;
+  roomId: number;
+  hostName='';
+  remoteUsername = '';
   remoteFeed!: any;
   feeds: any = [];
 
@@ -56,7 +61,8 @@ export class AppComponent implements OnInit {
     this.handleUserTalkingStatus();
   }
 
-  onSuccessStream() {
+  onSuccessStream(roomId: number) {
+    this.roomId = roomId;
     this.isLoading = false;
     this.isJoining = false;
   }
@@ -110,29 +116,36 @@ export class AppComponent implements OnInit {
      })
   }
 
-  createRoom() {
-    this.isLoading = !this.subsribeMode;
-    this.isJoining = this.subsribeMode;
+  private initialJanus() {
     this._videoRoomService.initialJanusInstance(this.onSuccessStream.bind(this))
   }
 
-  joinRoom(roomId: number) {
-    console.log('Joining room:', roomId);
-    JanusUtil.pluginHandler.send({
-      message: {
-        request: 'join',
-        room: +roomId,
-        ptype: 'publisher',
-        display: 'AngularUser' + Janus.randomString(3),
-      },
-    });
+  createRoom() {
+    if(!this.hostName.trim().length) {
+      this.message.info('Please enter host name');
+      return;
+    }
+
+    this.isLoading = true;
+    this.initialJanus();
   }
 
   joinAsRemoteRoom() {
+    if(!this.remoteUsername.trim().length) {
+      this.message.info('Please enter user name');
+      return;
+    }
+
+    if(!this.roomId) {
+      this.message.info('Please enter room number');
+      return;
+    }
+
     this._videoRoomService.roomId = +this.roomId;
     this._videoRoomService.userType = UserTypeEnum.Publisher;
-    this.subsribeMode = true
-    this.createRoom()
+    this.subsribeMode = true;
+    this.isJoining = true;
+    this.initialJanus()
   }
 
   destroyRoom(id: string) : void {

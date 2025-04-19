@@ -77,7 +77,7 @@ export class JanusVideoRoomService {
       onmessage: (message: any, jsep: any) => {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
-          this.onSuccessStream()
+          this.onSuccessStream(this.roomId)
           JanusUtil.publishOwnFeed();
         }
 
