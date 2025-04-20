@@ -21,8 +21,11 @@ export class JanusVideoRoomService {
   userTalkingStatus$: Subject<{id: number, status: boolean}> = new Subject<{id: number, status: boolean}>();
   onSuccessStream: Function;
 
-  initialJanusInstance(onSuccessStream) {
+  userInfo: {hostName: string, userName: string};
+
+  initialJanusInstance(onSuccessStream, userInfo: {hostName: string, userName: string}) {
     this.onSuccessStream = onSuccessStream;
+    this.userInfo = userInfo;
 
     Janus.init({
       debug: 'all',
@@ -59,7 +62,8 @@ export class JanusVideoRoomService {
             publishers: 10,
             audiolevel_event: true,
             audio_active_packets: 7,
-            display: "User Assalom" + Janus.randomString(4),
+            display: this.userInfo.hostName,
+            metadata: {isHost: true}
           },
           success: (response: any) => {
             this.roomId = response.room;
@@ -241,7 +245,7 @@ export class JanusVideoRoomService {
         ptype: UserTypeEnum.Publisher,
         audiolevel_event: true,
         audio_active_packets: 7,
-        display: 'AngularUser' + Janus.randomString(4),
+        display: this.userInfo.userName,
       },
     });
   }

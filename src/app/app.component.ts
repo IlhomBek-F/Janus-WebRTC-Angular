@@ -115,7 +115,7 @@ export class AppComponent implements OnInit {
   }
 
   private initialJanus() {
-    this._videoRoomService.initialJanusInstance(this.onSuccessStream.bind(this))
+    this._videoRoomService.initialJanusInstance(this.onSuccessStream.bind(this), {hostName: this.hostName, userName: this.remoteUsername})
   }
 
   createRoom() {
@@ -161,7 +161,7 @@ export class AppComponent implements OnInit {
 
   shareScreen() {
     this._videoRoomService.userType = UserTypeEnum.ScreenShare;
-    this._videoRoomService.initialJanusInstance(this.onSuccessStream);
+    this._videoRoomService.initialJanusInstance(this.onSuccessStream, {hostName: this.hostName, userName: this.remoteUsername});
   }
 
   stopShareScreen() {
