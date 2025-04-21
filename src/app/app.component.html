@@ -16,8 +16,8 @@
 <div id="container" class="bg-[red]"></div>
 <div class="flex flex-wrap items-center m-3 gap-3">
   <div>
-    <video autoPlay playsInline #videoElement class="w-[372px] h-[280px] rounded-md"></video>
-    @if (videoElement.srcObject) {
+    <video autoPlay playsInline #localVideo class="w-[372px] h-[280px] rounded-md"></video>
+    @if (localVideo.srcObject) {
       <div class="flex gap-1">
         <button nz-button nzType="primary" nz-tooltip class="w-full"><i class="pi pi-microphone text-[20px]"></i></button>
         <button nz-button nzType="primary" class="w-full"><i class="pi pi-camera text-[20px]"></i></button>

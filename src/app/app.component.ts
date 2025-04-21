@@ -1,8 +1,10 @@
 import {
   Component,
+  DestroyRef,
   ElementRef,
   inject,
   OnInit,
+  QueryList,
   ViewChild,
 } from '@angular/core';
 import Janus from 'janus-gateway';
@@ -26,8 +28,10 @@ import { NzMessageService } from 'ng-zorro-antd/message';
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
-  @ViewChild('videoElement', { static: true })
-  videoElement!: ElementRef<HTMLVideoElement>;
+  @ViewChild('localVideo', { static: true })
+  localVideoElement!: ElementRef<HTMLVideoElement>;
+
+  @ViewChild('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
 
   @ViewChild('screenShare', { static: true })
   screenShare!: ElementRef<HTMLVideoElement>;
@@ -43,13 +47,13 @@ export class AppComponent implements OnInit {
   remoteFeed!: any;
   feeds: any = [];
 
-  remoteUserStream!: { id: string; stream: MediaStream, talking: boolean }[];
+  remoteUserStream: { id: number; stream: MediaStream, talking: boolean }[] = [];
   remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
 
   isLoading = false;
   isJoining = false;
-  constructor(private _videoRoomService: JanusVideoRoomService) {
+  constructor(private _videoRoomService: JanusVideoRoomService, private _destroyRef: DestroyRef) {
   }
 
   ngOnInit() {
@@ -66,18 +70,40 @@ export class AppComponent implements OnInit {
   }
 
   handleLocalUserTrack() {
-    this._videoRoomService.localTrack$.subscribe((stream: MediaStream) => {
-      this.videoElement.nativeElement.srcObject = stream;
+    this._videoRoomService.localTrack$.subscribe((track: MediaStreamTrack) => {
+      const localVideoElement = this.localVideoElement.nativeElement
+      if(localVideoElement.srcObject) {
+        (localVideoElement.srcObject as MediaStream).addTrack(track);
+      } else {
+        const stream = new MediaStream([track]);
+        localVideoElement.srcObject = stream;
+      }
     });
   }
 
   handleRemoteUserTrack() {
-    this._videoRoomService.remoteUserTrack$.pipe(
-      map((streamObj) => {
-        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value, talking: false}));
-      })
-    ).subscribe((streamObj) => {
-      this.remoteUserStream = streamObj;
+    this._videoRoomService.remoteUserTrack$
+      .subscribe((streamObj: {id: number, track: MediaStreamTrack}) => {
+        const existStream = this.remoteUserStream.findIndex(({id}) => +id === streamObj.id);
+
+        if(existStream === -1) {
+          const stream = new MediaStream();
+          stream.addTrack(streamObj.track);
+          this.remoteUserStream.push({id: streamObj.id, stream, talking: false})
+        }
+
+        setTimeout(() => {
+          this.remoteVideoRefs.forEach((videoEl, i) => {
+            if(existStream > -1) {
+              (videoEl.nativeElement.srcObject as MediaStream).addTrack(streamObj.track)
+            } else {
+              const stream = new MediaStream();
+              stream.addTrack(streamObj.track);
+              videoEl.nativeElement.srcObject = stream;
+            }
+          });
+        }, 0)
+
         this.remoteUserStream.forEach((user) => {
           if(!this.remoteUserMediaState[user.id]) {
             this.remoteUserMediaState[user.id] = {isCamMute: false, isMicMute: false}
@@ -85,13 +111,13 @@ export class AppComponent implements OnInit {
         })
     })
 
-    this._videoRoomService.remoteUserAudioTrack$.pipe(
-      map((streamObj) => {
-        return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value, talking: false}));
-      })
-    ).subscribe((streamObj) => {
-       this.remoteUserAudioStream = streamObj;
-    })
+    // this._videoRoomService.remoteUserAudioTrack$.pipe(
+    //   map((streamObj) => {
+    //     return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value, talking: false}));
+    //   })
+    // ).subscribe((streamObj) => {
+    //    this.remoteUserAudioStream = streamObj;
+    // })
   }
 
   handleShareScreenTrack() {

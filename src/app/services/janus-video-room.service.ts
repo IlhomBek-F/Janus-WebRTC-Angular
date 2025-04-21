@@ -14,10 +14,10 @@ export class JanusVideoRoomService {
   roomId: number;
   userType = UserTypeEnum.Admin; // Default to Admin
   screenStream = signal(null);
-  localTrack$: Subject<MediaStream> = new Subject<MediaStream>();
-  remoteUserTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
+  localTrack$: Subject<MediaStreamTrack> = new Subject<MediaStreamTrack>();
+  remoteUserTrack$:Subject<{id: number, track: MediaStreamTrack}> = new Subject<{id: number, track: MediaStreamTrack}>();
   screenShareTrack$: Subject<MediaStream> = new Subject();
-  remoteUserAudioTrack$: Subject<Record<string, MediaStream>> = new Subject<Record<string, MediaStream>>();
+  remoteUserAudioTrack$: Subject<{id: number, track: MediaStreamTrack}> = new Subject<{id: number, track: MediaStreamTrack}>();
   userTalkingStatus$: Subject<{id: number, status: boolean}> = new Subject<{id: number, status: boolean}>();
   onSuccessStream: Function;
 
@@ -95,9 +95,7 @@ export class JanusVideoRoomService {
       },
       onlocaltrack: (track, on) => {
         if (track.kind === "video") {
-          let localStream = new MediaStream();
-          localStream.addTrack(track);
-          this.localTrack$.next(localStream);
+          this.localTrack$.next(track);
         }
       },
     });
@@ -139,9 +137,7 @@ export class JanusVideoRoomService {
       },
       onlocaltrack: (track, on) => {
         if (track.kind === "video") {
-          let localStream = new MediaStream();
-          localStream.addTrack(track);
-          this.localTrack$.next(localStream);
+          this.localTrack$.next(track);
         }
       },
     });
@@ -220,13 +216,11 @@ export class JanusVideoRoomService {
             if(publisher.metadata?.isScreenShare) {
               this.screenShareTrack$.next(remoteStream)
             }else {
-              this.remoteUserTrack$.next({[publisher.id]: remoteStream});
+              this.remoteUserTrack$.next({id: publisher.id, track});
             }
           } else if(track.kind === 'audio') {
             let remoteStream = new MediaStream();
             remoteStream.addTrack(track);
-
-            this.remoteUserAudioTrack$.next({[publisher.id]: remoteStream})
           }
         },
         error: function (error: any) {
