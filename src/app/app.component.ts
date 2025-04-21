@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   Component,
   DestroyRef,
   ElementRef,
@@ -27,7 +28,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, AfterViewInit {
   @ViewChild('localVideo', { static: true })
   localVideoElement!: ElementRef<HTMLVideoElement>;
 
@@ -58,9 +59,12 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.handleLocalUserTrack();
-    this.handleRemoteUserTrack();
     this.handleShareScreenTrack();
     this.handleUserTalkingStatus();
+  }
+
+  ngAfterViewInit(): void {
+    this.handleRemoteUserTrack();
   }
 
   onSuccessStream(roomId: number) {
@@ -92,8 +96,7 @@ export class AppComponent implements OnInit {
           this.remoteUserStream.push({id: streamObj.id, stream, talking: false})
         }
 
-        setTimeout(() => {
-          this.remoteVideoRefs.forEach((videoEl, i) => {
+          (this.remoteVideoRefs || [])?.forEach((videoEl, i) => {
             if(existStream > -1) {
               (videoEl.nativeElement.srcObject as MediaStream).addTrack(streamObj.track)
             } else {
@@ -102,7 +105,6 @@ export class AppComponent implements OnInit {
               videoEl.nativeElement.srcObject = stream;
             }
           });
-        }, 0)
 
         this.remoteUserStream.forEach((user) => {
           if(!this.remoteUserMediaState[user.id]) {
