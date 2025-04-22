@@ -7,3 +7,9 @@
   width: 400px;
   height: 400px;
 }
+
+::ng-deep {
+  .ant-popover-inner-content {
+    width: 100%;
+  }
+}
