@@ -17,6 +17,7 @@
 <div class="flex flex-wrap items-center m-3 gap-3">
   <div>
     <video autoPlay playsInline #localVideo class="w-[372px] h-[280px] rounded-md"></video>
+    <canvas  #localCanvas class="w-[372px] h-[280px] rounded-md hidden"></canvas>
     @if (localVideo.srcObject) {
       <div class="flex gap-1">
         <button nz-button nzType="primary" nz-tooltip class="w-full"><i class="pi pi-microphone text-[20px]"></i></button>
@@ -28,18 +29,17 @@
                 nz-popover
                 nzPopoverTitle="Virtual background"
                 [(nzPopoverVisible)]="visible"
-                (nzPopoverVisibleChange)="change($event)"
                 nzPopoverTrigger="click"
                 [nzPopoverContent]="contentTemplate">
                 <i class="pi pi-image text-[20px]"></i>
         </button>
         <ng-template #contentTemplate>
            <div class="flex flex-col">
-             <button nz-button nzType="default" class="w-full">No blur</button>
-             <button nz-button nzType="default" class="w-full">Low blur</button>
-             <button nz-button nzType="default" class="w-full">Mid blur</button>
-             <button nz-button nzType="default" class="w-full">High blur</button>
-             <button nz-button nzType="default" class="w-full">Image</button>
+             <button nz-button nzType="default" class="w-full" (click)="noBlur()">No blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="lowBlur()">Low blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="midBlur()">Mid blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="highBlur()">High blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="setBackgroundImage()">Image</button>
            </div>
         </ng-template>
       </div>
@@ -57,5 +57,3 @@
     </div>
   }
 </div>
-
-<app-virtual-background></app-virtual-background>
