@@ -7,6 +7,7 @@ import {
   OnInit,
   QueryList,
   ViewChild,
+  ViewChildren,
 } from '@angular/core';
 import Janus from 'janus-gateway';
 import { FormsModule } from '@angular/forms';
@@ -35,7 +36,7 @@ import { NzPopoverModule } from 'ng-zorro-antd/popover';
 export class AppComponent implements OnInit, AfterViewInit {
   @ViewChild('localVideo', { static: true }) localVideoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('localCanvas', { static: true }) localCanvasElement!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
+  @ViewChildren('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
   @ViewChild('screenShare', { static: true }) screenShare!: ElementRef<HTMLVideoElement>;
   private readonly message = inject(NzMessageService);
   private segmenter: any; // Define segmenter as a class variable for body segmentation
@@ -210,8 +211,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
     const segmenterConfig: any = {
       runtime: 'mediapipe',
-      solutionPath:
-        'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
+      solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
       modelType: 'general',
     };
 
