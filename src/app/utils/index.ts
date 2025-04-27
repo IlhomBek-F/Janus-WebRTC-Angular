@@ -36,14 +36,16 @@ static destroyRoom() {
     })
   }
 
-  static publishOwnFeed() {
+  static publishOwnFeed(stream?: MediaStream) {
+    const vid = stream && {video: stream.getVideoTracks()[0]} || {}
     // Publish our stream
     JanusUtil.pluginHandler.createOffer({
       media: {
         audioRecv: true, // We're sending, not receiving
         videoRecv: true,
         audioSend: true,
-        videoSend: true
+        videoSend: true,
+        ...vid
       },
         success: (jsep: any) => {
           const publish = {

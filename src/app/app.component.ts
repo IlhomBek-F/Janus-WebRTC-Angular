@@ -25,6 +25,8 @@ import "@tensorflow/tfjs-converter";
 import "@tensorflow/tfjs-backend-webgl";
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
+import { SelfieSegmentation } from '@mediapipe/selfie_segmentation';
+import { Camera } from '@mediapipe/camera_utils';
 
 @Component({
   selector: 'app-root',
@@ -38,6 +40,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   @ViewChild('localCanvas', { static: true }) localCanvasElement!: ElementRef<HTMLCanvasElement>;
   @ViewChildren('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
   @ViewChild('screenShare', { static: true }) screenShare!: ElementRef<HTMLVideoElement>;
+
   private readonly message = inject(NzMessageService);
   private segmenter: any; // Define segmenter as a class variable for body segmentation
   public blurAmount: number = 0; // Control the amount of blur
@@ -80,6 +83,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.roomId = roomId;
     this.isLoading = false;
     this.isJoining = false;
+    this.handleVirtualBackground();
   }
 
   handleLocalUserTrack() {
@@ -90,6 +94,8 @@ export class AppComponent implements OnInit, AfterViewInit {
       } else {
         const stream = new MediaStream([track]);
         localVideoElement.srcObject = stream;
+        this.isBlurMode = true;
+        this.blurAmount = 10;
       }
     });
   }
@@ -149,6 +155,57 @@ export class AppComponent implements OnInit, AfterViewInit {
          return userData;
       })
      })
+  }
+
+  handleVirtualBackground() {
+    const inputVideo = document.createElement('video');
+
+    const canvasElement = document.createElement('canvas');
+    const ctx = canvasElement.getContext('2d');
+
+    const segmentation = new SelfieSegmentation({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+    });
+
+    segmentation.setOptions({
+      modelSelection: 1,
+    });
+
+    segmentation.onResults(results => {
+      canvasElement.width = results.image.width;
+    canvasElement.height = results.image.height;
+
+    // STEP 1: Draw blurred background
+    ctx.save();
+    ctx.filter = 'blur(16px)';
+    ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+    ctx.restore();
+
+    // STEP 2: Erase the person area (make it transparent)
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+
+    // STEP 3: Draw the original (sharp) person on top
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+    // STEP 4 (optional): Reset
+    ctx.globalCompositeOperation = 'source-over';
+    });
+
+    // Set camera input
+    const camera = new Camera(inputVideo, {
+      onFrame: async () => {
+        await segmentation.send({ image: inputVideo });
+      },
+      width: 640,
+      height: 480
+    });
+    camera.start();
+
+    // Here's the trick: stream canvas into video
+    const stream = canvasElement.captureStream(30); // 30 FPS
+    JanusUtil.publishOwnFeed(stream)
   }
 
   private initialJanus() {
@@ -220,7 +277,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       segmenterConfig
     );
 
-    this.localVideoElement.nativeElement.hidden = true;
+    // this.localVideoElement.nativeElement.hidden = true;
     this.localCanvasElement.nativeElement.classList.remove('hidden')
     if (this.isBlurMode) {
       this.localCanvasElement.nativeElement.setAttribute('style', `background-image: none`);
@@ -235,6 +292,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     const edgeBlurAmount = 3;
     const flipHorizontal = false;
     const context = this.localCanvasElement.nativeElement.getContext('2d');
+    const stream = this.localCanvasElement.nativeElement.captureStream();
 
     // Continuously process video frames
     const processFrame = async () => {
@@ -250,7 +308,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         edgeBlurAmount,
         flipHorizontal
       );
-
+      stream.getTracks()
+      .forEach((track) => {
+         (this.localVideoElement.nativeElement.srcObject as MediaStream).addTrack(track)
+      })
       // Request the next frame
       requestAnimationFrame(processFrame);
     };
