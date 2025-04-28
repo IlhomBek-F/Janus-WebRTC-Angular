@@ -94,7 +94,7 @@ export class JanusVideoRoomService {
         }
       },
       onlocaltrack: (track, on) => {
-        if (track.kind === "video") {
+        if (track.kind === "video" && on) {
           this.localTrack$.next(track);
         }
       },

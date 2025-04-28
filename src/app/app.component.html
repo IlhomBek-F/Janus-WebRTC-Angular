@@ -35,10 +35,10 @@
         </button>
         <ng-template #contentTemplate>
            <div class="flex flex-col">
-             <button nz-button nzType="default" class="w-full" (click)="noBlur()">No blur</button>
-             <button nz-button nzType="default" class="w-full" (click)="lowBlur()">Low blur</button>
-             <button nz-button nzType="default" class="w-full" (click)="midBlur()">Mid blur</button>
-             <button nz-button nzType="default" class="w-full" (click)="highBlur()">High blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="handleVirtualBackground(0); isImage = false">No blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="handleVirtualBackground(5); isImage = false">Low blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="handleVirtualBackground(10); isImage = false">Mid blur</button>
+             <button nz-button nzType="default" class="w-full" (click)="handleVirtualBackground(15); isImage = false">High blur</button>
              <button nz-button nzType="default" class="w-full" (click)="setBackgroundImage()">Image</button>
            </div>
         </ng-template>

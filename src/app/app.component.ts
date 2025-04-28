@@ -83,7 +83,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.roomId = roomId;
     this.isLoading = false;
     this.isJoining = false;
-    this.handleVirtualBackground();
+    // this.handleVirtualBackground();
   }
 
   handleLocalUserTrack() {
@@ -157,55 +157,91 @@ export class AppComponent implements OnInit, AfterViewInit {
      })
   }
 
-  handleVirtualBackground() {
-    const inputVideo = document.createElement('video');
+  isVirtualBackground = false;
+  blur = 0;
+  isImage = false;
+  bgImage:any;
 
+  handleVirtualBackground(blur: number) {
+    const inputVideo = document.createElement('video');
+    this.blur = blur;
     const canvasElement = document.createElement('canvas');
     const ctx = canvasElement.getContext('2d');
 
-    const segmentation = new SelfieSegmentation({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
-    });
+    if(!this.isVirtualBackground) {
+      const segmentation = new SelfieSegmentation({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+      });
 
-    segmentation.setOptions({
-      modelSelection: 1,
-    });
+      segmentation.setOptions({
+        modelSelection: 1,
+      });
+      segmentation.onResults(results => {
+        canvasElement.width = results.image.width;
+        canvasElement.height = results.image.height;
+      // STEP 1: Draw blurred background
 
-    segmentation.onResults(results => {
-      canvasElement.width = results.image.width;
-    canvasElement.height = results.image.height;
+       ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+       ctx.save();
 
-    // STEP 1: Draw blurred background
-    ctx.save();
-    ctx.filter = 'blur(16px)';
-    ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-    ctx.restore();
+      if(this.isImage) {
+        ctx.filter = 'none';
+        ctx.drawImage(this.bgImage, 0, 0, canvasElement.width, canvasElement.height);
+      }else {
+        ctx.filter = `blur(${this.blur}px)`;
+        ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      }
 
-    // STEP 2: Erase the person area (make it transparent)
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+      ctx.restore();
 
-    // STEP 3: Draw the original (sharp) person on top
-    ctx.globalCompositeOperation = 'destination-over';
-    ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    // STEP 4 (optional): Reset
-    ctx.globalCompositeOperation = 'source-over';
-    });
+      // STEP 2: Erase the person area (make it transparent)
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
 
-    // Set camera input
-    const camera = new Camera(inputVideo, {
-      onFrame: async () => {
-        await segmentation.send({ image: inputVideo });
-      },
-      width: 640,
-      height: 480
-    });
-    camera.start();
+      // STEP 3: Draw the original (sharp) person on top
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    // Here's the trick: stream canvas into video
-    const stream = canvasElement.captureStream(30); // 30 FPS
-    JanusUtil.publishOwnFeed(stream)
+      // STEP 4 (optional): Reset
+      ctx.globalCompositeOperation = 'source-over';
+      });
+
+      const camera = new Camera(inputVideo, {
+        onFrame: async () => {
+          await segmentation.send({ image: inputVideo });
+        },
+        width: 640,
+        height: 480
+      });
+      camera.start();
+    }
+
+    const stream = canvasElement.captureStream(30); // 30 FPS\
+ // Here's the trick: stream canvas into video
+    if(!this.isVirtualBackground) {
+     this.isVirtualBackground = true;
+     this.localVideoElement.nativeElement.srcObject = stream;
+
+     JanusUtil.pluginHandler.send({ message: { request: "unpublish" }, success: () => {
+
+     } });
+
+     setTimeout(() => {
+      JanusUtil.publishOwnFeed(stream)
+     }, 5000);
+   }
+  }
+
+  setBackgroundImage() {
+    const bgImage = new Image();
+    bgImage.crossOrigin = 'anonymous'; // Important!
+    bgImage.src = 'https://tse1.mm.bing.net/th?id=OIP.yLf7kQVaLpxqCZX1VRHw-wHaEK&pid=Api';
+    bgImage.onload = () => {
+      this.isImage = true;
+      this.bgImage = bgImage;
+      this.handleVirtualBackground(0)
+    }
   }
 
   private initialJanus() {
@@ -262,155 +298,5 @@ export class AppComponent implements OnInit, AfterViewInit {
     JanusUtil.endScreenShare(() => {
       this.screenShare.nativeElement.srcObject = null;
     })
-  }
-
-  async initSegmenter() {
-    const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
-    const segmenterConfig: any = {
-      runtime: 'mediapipe',
-      solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
-      modelType: 'general',
-    };
-
-    this.segmenter = await bodySegmentation.createSegmenter(
-      model,
-      segmenterConfig
-    );
-
-    // this.localVideoElement.nativeElement.hidden = true;
-    this.localCanvasElement.nativeElement.classList.remove('hidden')
-    if (this.isBlurMode) {
-      this.localCanvasElement.nativeElement.setAttribute('style', `background-image: none`);
-      this.blurBackground();
-    } else {
-      this.removeBackground();
-    }
-  }
-
-  async blurBackground() {
-    const foregroundThreshold = 0.5;
-    const edgeBlurAmount = 3;
-    const flipHorizontal = false;
-    const context = this.localCanvasElement.nativeElement.getContext('2d');
-    const stream = this.localCanvasElement.nativeElement.captureStream();
-
-    // Continuously process video frames
-    const processFrame = async () => {
-      // Draw the video frame on the canvas
-      context.drawImage(this.localVideoElement.nativeElement, 0, 0, 640, 480);
-      // Apply the background blur effect
-      await bodySegmentation.drawBokehEffect(
-        this.localCanvasElement.nativeElement,
-        this.localVideoElement.nativeElement,
-        await this.segmenter.segmentPeople(this.localVideoElement.nativeElement),
-        foregroundThreshold,
-        this.blurAmount,
-        edgeBlurAmount,
-        flipHorizontal
-      );
-      stream.getTracks()
-      .forEach((track) => {
-         (this.localVideoElement.nativeElement.srcObject as MediaStream).addTrack(track)
-      })
-      // Request the next frame
-      requestAnimationFrame(processFrame);
-    };
-
-    // Start processing the first frame
-    requestAnimationFrame(processFrame);
-  }
-
-  async removeBackground() {
-    this.localCanvasElement.nativeElement.width = 640;
-    this.localCanvasElement.nativeElement.height = 480;
-    const context = this.localCanvasElement.nativeElement.getContext('2d');
-
-    // Continuously process video frames
-    const processFrame = async () => {
-      // Draw the video frame on the canvas
-      context.drawImage(this.localVideoElement.nativeElement, 0, 0);
-
-      const segmentation = await this.segmenter.segmentPeople(
-        this.localVideoElement.nativeElement
-      );
-      const foregroundColor = { r: 0, g: 0, b: 0, a: 12 };
-      const backgroundColor = { r: 0, g: 0, b: 0, a: 15 };
-
-      const coloredPartImage = await bodySegmentation.toBinaryMask(
-        segmentation,
-        foregroundColor,
-        backgroundColor
-      );
-
-      // Get the image data of the canvas
-      const imageData = context.getImageData(0, 0, 640, 480);
-      const pixels = imageData.data;
-
-      // Loop through each pixel to set transparency
-      for (let i = 3; i < pixels.length; i += 4) {
-        if (coloredPartImage.data[i] === 15) {
-          pixels[i] = 0; // Set the alpha channel to 0 (transparent)
-        }
-      }
-
-      await bodySegmentation.drawBokehEffect(
-        this.localCanvasElement.nativeElement,
-        imageData,
-        segmentation,
-        0.5,
-        10
-      );
-
-      // Request the next frame
-      requestAnimationFrame(processFrame);
-    };
-
-    // Start processing the first frame
-    requestAnimationFrame(processFrame);
-  }
-
-  noBlur(): void {
-    if (!this.isBlurMode) {
-      this.isBlurMode = true;
-      this.initSegmenter();
-    }
-    this.blurAmount = 0;
-  }
-
-  lowBlur(): void {
-    if (!this.isBlurMode) {
-      this.isBlurMode = true;
-      this.initSegmenter();
-    }
-    this.blurAmount = 3;
-  }
-
-  midBlur(): void {
-    if (!this.isBlurMode) {
-      this.isBlurMode = true;
-      this.initSegmenter();
-    }
-    this.blurAmount = 5;
-  }
-
-  highBlur(): void {
-      this.isBlurMode = true;
-      this.initSegmenter();
-    this.blurAmount = 10;
-  }
-
-  setBackgroundImage() {
-    if (this.isBlurMode) {
-      this.isBlurMode = false;
-      this.initSegmenter();
-    }
-    this.localCanvasElement.nativeElement.setAttribute(
-      'style',
-      `background-image: url('https://tse2.mm.bing.net/th?id=OIP.7cRYFyLoDEDh4sRtM73vvwHaDg&pid=Api&P=0&h=220');
-       background-repeat: no-repeat;
-       background-position: center;
-       background-size: cover
-      `
-    );
   }
 }
