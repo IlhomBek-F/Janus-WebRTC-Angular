@@ -27,6 +27,17 @@ import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { SelfieSegmentation } from '@mediapipe/selfie_segmentation';
 import { Camera } from '@mediapipe/camera_utils';
 
+// Add this globally if TypeScript doesn't recognize WebCodecs classes
+declare class MediaStreamTrackProcessor {
+  constructor(init: { track: MediaStreamTrack });
+  readable: ReadableStream<VideoFrame>;
+}
+
+declare class MediaStreamTrackGenerator {
+  constructor(init: { kind: 'video' | 'audio' });
+  writable: WritableStream<VideoFrame>;
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -55,6 +66,14 @@ export class AppComponent implements OnInit, AfterViewInit {
   remoteFeed!: any;
   feeds: any = [];
 
+ globalController = null;
+ timestamp = null;
+ stream = null;
+ customBackgroundImage = new Image();
+
+ canvasElement = null;
+ canvasCtx = null;
+
   remoteUserStream: { id: number; stream: MediaStream, talking: boolean }[] = [];
   remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
@@ -62,6 +81,15 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   isLoading = false;
   isJoining = false;
+
+  selfieSegmentation = new SelfieSegmentation({
+    locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+    }
+  });
+
+
+
   constructor(private _videoRoomService: JanusVideoRoomService, private _destroyRef: DestroyRef) {
   }
 
@@ -69,6 +97,26 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.handleLocalUserTrack();
     this.handleShareScreenTrack();
     this.handleUserTalkingStatus();
+    this.selfieSegmentation.setOptions({
+      modelSelection: 1
+    });
+  }
+
+  async turnOnCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true
+      });
+
+      this.localVideoElement.nativeElement.srcObject = stream;
+      this.setVirtualBackground()
+    } catch (error) {
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        alert('Permission denied error');
+      } else {
+        alert('error');
+      }
+    }
   }
 
   clickMe(): void {
@@ -83,7 +131,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.roomId = roomId;
     this.isLoading = false;
     this.isJoining = false;
-    this.initialVirtualBackground();
+    this.turnOnCamera()
+    // this.initialVirtualBackground();
   }
 
   handleLocalUserTrack() {
@@ -160,6 +209,69 @@ export class AppComponent implements OnInit, AfterViewInit {
   handleVirtualBackground(blur: number) {
     this.virtualBackgroundState.blur = blur;
     this.virtualBackgroundState.isImage = false;
+  }
+
+  async setVirtualBackground() {
+    const transformedStream = await this.transformGetUserMediaStream();
+    this.selfieSegmentation.onResults(this.onResults.bind(this));
+    this.localVideoElement.nativeElement.srcObject = transformedStream;
+    JanusUtil.publishOwnFeed(transformedStream)
+    // $uploadInput.disabled = false;
+  }
+
+  async transformGetUserMediaStream() {
+    const videoTrack = (this.localVideoElement.nativeElement.srcObject as MediaStream).getVideoTracks()[0];
+    const trackProcessor = new MediaStreamTrackProcessor({ track: videoTrack });
+    const trackGenerator = new MediaStreamTrackGenerator({ kind: 'video' });
+    const { width, height } = videoTrack.getSettings();
+
+    this.canvasElement = new OffscreenCanvas(width, height);
+    this.canvasCtx = this.canvasElement.getContext('2d');
+
+    const transformer = new TransformStream({
+       transform: async (videoFrame, controller) => {
+        this.globalController = controller;
+        this.timestamp = videoFrame.timestamp;
+        videoFrame.width = width;
+        videoFrame.height = height;
+        await this.selfieSegmentation.send({ image: videoFrame });
+
+        videoFrame.close();
+        console.log('transform');
+      }
+    });
+
+    trackProcessor.readable.pipeThrough(transformer).pipeTo(trackGenerator.writable);
+
+    const transformedStream = new MediaStream();
+    transformedStream.addTrack(trackGenerator as any)
+    return transformedStream;
+  }
+
+   onResults(results) {
+    this.canvasElement.width = results.image.width;
+    this.canvasElement.height = results.image.height;
+  // STEP 1: Draw blurred background
+
+    this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+    this.canvasCtx.save();
+
+    this.canvasCtx.filter = `blur(${10}px)`;
+    this.canvasCtx.drawImage(results.image, 0, 0, this.canvasElement.width, this.canvasElement.height);
+    this.canvasCtx.restore();
+
+
+    // STEP 2: Erase the person area (make it transparent)
+    this.canvasCtx.globalCompositeOperation = 'destination-out';
+    this.canvasCtx.drawImage(results.segmentationMask, 0, 0, this.canvasElement.width, this.canvasElement.height);
+
+    // STEP 3: Draw the original (sharp) person on top
+    this.canvasCtx.globalCompositeOperation = 'destination-over';
+    this.canvasCtx.drawImage(results.image, 0, 0, this.canvasElement.width, this.canvasElement.height);
+
+    // STEP 4 (optional): Reset
+    this.canvasCtx.globalCompositeOperation = 'source-over';
+    this.globalController.enqueue(new VideoFrame(this.canvasElement, { timestamp: this.timestamp, alpha: 'discard' }));
   }
 
  private async initialVirtualBackground() {
