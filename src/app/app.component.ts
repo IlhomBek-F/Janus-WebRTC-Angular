@@ -23,7 +23,6 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import "@tensorflow/tfjs-core";
 import "@tensorflow/tfjs-converter";
 import "@tensorflow/tfjs-backend-webgl";
-import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { SelfieSegmentation } from '@mediapipe/selfie_segmentation';
 import { Camera } from '@mediapipe/camera_utils';
@@ -59,6 +58,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   remoteUserStream: { id: number; stream: MediaStream, talking: boolean }[] = [];
   remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
+  virtualBackgroundState = {blur: 0, isImage: false, imageInstance: null, cameraInstance: null};
 
   isLoading = false;
   isJoining = false;
@@ -83,7 +83,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.roomId = roomId;
     this.isLoading = false;
     this.isJoining = false;
-    // this.handleVirtualBackground();
+    this.initialVirtualBackground();
   }
 
   handleLocalUserTrack() {
@@ -157,18 +157,17 @@ export class AppComponent implements OnInit, AfterViewInit {
      })
   }
 
-  isVirtualBackground = false;
-  blur = 0;
-  isImage = false;
-  bgImage:any;
-
   handleVirtualBackground(blur: number) {
+    this.virtualBackgroundState.blur = blur;
+    this.virtualBackgroundState.isImage = false;
+  }
+
+ private async initialVirtualBackground() {
     const inputVideo = document.createElement('video');
-    this.blur = blur;
+
     const canvasElement = document.createElement('canvas');
     const ctx = canvasElement.getContext('2d');
 
-    if(!this.isVirtualBackground) {
       const segmentation = new SelfieSegmentation({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
       });
@@ -176,7 +175,9 @@ export class AppComponent implements OnInit, AfterViewInit {
       segmentation.setOptions({
         modelSelection: 1,
       });
+
       segmentation.onResults(results => {
+        const {isImage, imageInstance, blur} = this.virtualBackgroundState;
         canvasElement.width = results.image.width;
         canvasElement.height = results.image.height;
       // STEP 1: Draw blurred background
@@ -184,16 +185,15 @@ export class AppComponent implements OnInit, AfterViewInit {
        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
        ctx.save();
 
-      if(this.isImage) {
+      if(isImage) {
         ctx.filter = 'none';
-        ctx.drawImage(this.bgImage, 0, 0, canvasElement.width, canvasElement.height);
+        ctx.drawImage(imageInstance, 0, 0, canvasElement.width, canvasElement.height);
       }else {
-        ctx.filter = `blur(${this.blur}px)`;
+        ctx.filter = `blur(${blur}px)`;
         ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
       }
 
       ctx.restore();
-
 
       // STEP 2: Erase the person area (make it transparent)
       ctx.globalCompositeOperation = 'destination-out';
@@ -215,32 +215,25 @@ export class AppComponent implements OnInit, AfterViewInit {
         height: 480
       });
       camera.start();
-    }
 
+    this.virtualBackgroundState.cameraInstance = camera;
     const stream = canvasElement.captureStream(30); // 30 FPS\
- // Here's the trick: stream canvas into video
-    if(!this.isVirtualBackground) {
-     this.isVirtualBackground = true;
-     this.localVideoElement.nativeElement.srcObject = stream;
-
-     JanusUtil.pluginHandler.send({ message: { request: "unpublish" }, success: () => {
-
-     } });
-
-     setTimeout(() => {
+    // Here's the trick: stream canvas into video
       JanusUtil.publishOwnFeed(stream)
-     }, 5000);
    }
-  }
 
   setBackgroundImage() {
     const bgImage = new Image();
     bgImage.crossOrigin = 'anonymous'; // Important!
-    bgImage.src = 'https://tse1.mm.bing.net/th?id=OIP.yLf7kQVaLpxqCZX1VRHw-wHaEK&pid=Api';
+    bgImage.src = 'https://tse3.mm.bing.net/th?id=OIP.61WVaITjtcbXRW6YsbWSUAHaE8&pid=Api&P=0&h=220';
+
     bgImage.onload = () => {
-      this.isImage = true;
-      this.bgImage = bgImage;
-      this.handleVirtualBackground(0)
+      this.virtualBackgroundState.imageInstance = bgImage
+      this.virtualBackgroundState.isImage = true;
+    }
+
+    bgImage.onerror = (err) => {
+          console.log(err)
     }
   }
 

@@ -82,7 +82,6 @@ export class JanusVideoRoomService {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
           this.onSuccessStream(this.roomId)
-          JanusUtil.publishOwnFeed();
         }
 
         if(message.publishers) {
@@ -115,7 +114,6 @@ export class JanusVideoRoomService {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
           this.onSuccessStream();
-          JanusUtil.publishOwnFeed();
         }
 
         if(message.videoroom === JanusEventEnum.Talking) {
