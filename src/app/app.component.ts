@@ -88,8 +88,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   });
 
-
-
   constructor(private _videoRoomService: JanusVideoRoomService, private _destroyRef: DestroyRef) {
   }
 
@@ -98,18 +96,17 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.handleShareScreenTrack();
     this.handleUserTalkingStatus();
     this.selfieSegmentation.setOptions({
-      modelSelection: 1
+      modelSelection: 0
     });
   }
 
   async turnOnCamera() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({video: true
+});
 
       this.localVideoElement.nativeElement.srcObject = stream;
-      this.setVirtualBackground()
+      this.intialVirtualBackgroundMode()
     } catch (error) {
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         alert('Permission denied error');
@@ -211,12 +208,11 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.virtualBackgroundState.isImage = false;
   }
 
-  async setVirtualBackground() {
+  async intialVirtualBackgroundMode() {
     const transformedStream = await this.transformGetUserMediaStream();
     this.selfieSegmentation.onResults(this.onResults.bind(this));
     this.localVideoElement.nativeElement.srcObject = transformedStream;
     JanusUtil.publishOwnFeed(transformedStream)
-    // $uploadInput.disabled = false;
   }
 
   async transformGetUserMediaStream() {
@@ -235,9 +231,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         videoFrame.width = width;
         videoFrame.height = height;
         await this.selfieSegmentation.send({ image: videoFrame });
-
         videoFrame.close();
-        console.log('transform');
       }
     });
 
@@ -251,13 +245,17 @@ export class AppComponent implements OnInit, AfterViewInit {
    onResults(results) {
     this.canvasElement.width = results.image.width;
     this.canvasElement.height = results.image.height;
-  // STEP 1: Draw blurred background
 
     this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
     this.canvasCtx.save();
 
-    this.canvasCtx.filter = `blur(${10}px)`;
-    this.canvasCtx.drawImage(results.image, 0, 0, this.canvasElement.width, this.canvasElement.height);
+    if(this.virtualBackgroundState.isImage) {
+      this.canvasCtx.filter = 'none';
+      this.canvasCtx.drawImage(this.virtualBackgroundState.imageInstance, 0, 0, this.canvasElement.width, this.canvasElement.height);
+    }else {
+      this.canvasCtx.filter = `blur(${this.virtualBackgroundState.blur}px)`;
+      this.canvasCtx.drawImage(results.image, 0, 0, this.canvasElement.width, this.canvasElement.height);
+    }
     this.canvasCtx.restore();
 
 
