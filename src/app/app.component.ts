@@ -25,18 +25,6 @@ import "@tensorflow/tfjs-converter";
 import "@tensorflow/tfjs-backend-webgl";
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { SelfieSegmentation } from '@mediapipe/selfie_segmentation';
-import { Camera } from '@mediapipe/camera_utils';
-
-// Add this globally if TypeScript doesn't recognize WebCodecs classes
-declare class MediaStreamTrackProcessor {
-  constructor(init: { track: MediaStreamTrack });
-  readable: ReadableStream<VideoFrame>;
-}
-
-declare class MediaStreamTrackGenerator {
-  constructor(init: { kind: 'video' | 'audio' });
-  writable: WritableStream<VideoFrame>;
-}
 
 @Component({
   selector: 'app-root',
@@ -52,9 +40,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   @ViewChild('screenShare', { static: true }) screenShare!: ElementRef<HTMLVideoElement>;
 
   private readonly message = inject(NzMessageService);
-  private segmenter: any; // Define segmenter as a class variable for body segmentation
   public blurAmount: number = 0; // Control the amount of blur
-  private isBlurMode: boolean = true; // Toggle between blur mode and background image mode
   visible = false;
   janusRef!: Janus;
   janusRoom!: Janus;
@@ -65,14 +51,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   remoteUsername = '';
   remoteFeed!: any;
   feeds: any = [];
-
- globalController = null;
- timestamp = null;
- stream = null;
- customBackgroundImage = new Image();
-
- canvasElement = null;
- canvasCtx = null;
 
   remoteUserStream: { id: number; stream: MediaStream, talking: boolean }[] = [];
   remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
@@ -139,7 +117,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       } else {
         const stream = new MediaStream([track]);
         localVideoElement.srcObject = stream;
-        this.isBlurMode = true;
         this.blurAmount = 10;
       }
     });
