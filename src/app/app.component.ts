@@ -102,8 +102,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   async turnOnCamera() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({video: true
-});
+      const stream = await navigator.mediaDevices.getUserMedia({video: true});
 
       this.localVideoElement.nativeElement.srcObject = stream;
       this.intialVirtualBackgroundMode()
@@ -209,128 +208,69 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   async intialVirtualBackgroundMode() {
-    const transformedStream = await this.transformGetUserMediaStream();
-    this.selfieSegmentation.onResults(this.onResults.bind(this));
-    this.localVideoElement.nativeElement.srcObject = transformedStream;
-    JanusUtil.publishOwnFeed(transformedStream)
-  }
+    const inputVideoRef = document.createElement('video')
+    const canvasRef = document.createElement('canvas')
+    const ctx = canvasRef.getContext('2d')!;
 
-  async transformGetUserMediaStream() {
-    const videoTrack = (this.localVideoElement.nativeElement.srcObject as MediaStream).getVideoTracks()[0];
-    const trackProcessor = new MediaStreamTrackProcessor({ track: videoTrack });
-    const trackGenerator = new MediaStreamTrackGenerator({ kind: 'video' });
-    const { width, height } = videoTrack.getSettings();
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    inputVideoRef.srcObject = stream;
+    await inputVideoRef.play();
 
-    this.canvasElement = new OffscreenCanvas(width, height);
-    this.canvasCtx = this.canvasElement.getContext('2d');
+    // Mirror canvas to video output
+    const outputStream = canvasRef.captureStream(25);
+    this.localVideoElement.nativeElement.srcObject = outputStream;
+    JanusUtil.publishOwnFeed(outputStream)
 
-    const transformer = new TransformStream({
-       transform: async (videoFrame, controller) => {
-        this.globalController = controller;
-        this.timestamp = videoFrame.timestamp;
-        videoFrame.width = width;
-        videoFrame.height = height;
-        await this.selfieSegmentation.send({ image: videoFrame });
-        videoFrame.close();
-      }
+    const selfieSegmentation = new SelfieSegmentation({
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
     });
 
-    trackProcessor.readable.pipeThrough(transformer).pipeTo(trackGenerator.writable);
+    selfieSegmentation.setOptions({
+      modelSelection: 1,
+    });
 
-    const transformedStream = new MediaStream();
-    transformedStream.addTrack(trackGenerator as any)
-    return transformedStream;
-  }
+    selfieSegmentation.onResults((results) => {
+      const width = results.image.width;
+      const height = results.image.height;
 
-   onResults(results) {
-    this.canvasElement.width = results.image.width;
-    this.canvasElement.height = results.image.height;
+      canvasRef.width = width;
+      canvasRef.height = height;
 
-    this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
-    this.canvasCtx.save();
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
 
-    if(this.virtualBackgroundState.isImage) {
-      this.canvasCtx.filter = 'none';
-      this.canvasCtx.drawImage(this.virtualBackgroundState.imageInstance, 0, 0, this.canvasElement.width, this.canvasElement.height);
-    }else {
-      this.canvasCtx.filter = `blur(${this.virtualBackgroundState.blur}px)`;
-      this.canvasCtx.drawImage(results.image, 0, 0, this.canvasElement.width, this.canvasElement.height);
-    }
-    this.canvasCtx.restore();
-
-
-    // STEP 2: Erase the person area (make it transparent)
-    this.canvasCtx.globalCompositeOperation = 'destination-out';
-    this.canvasCtx.drawImage(results.segmentationMask, 0, 0, this.canvasElement.width, this.canvasElement.height);
-
-    // STEP 3: Draw the original (sharp) person on top
-    this.canvasCtx.globalCompositeOperation = 'destination-over';
-    this.canvasCtx.drawImage(results.image, 0, 0, this.canvasElement.width, this.canvasElement.height);
-
-    // STEP 4 (optional): Reset
-    this.canvasCtx.globalCompositeOperation = 'source-over';
-    this.globalController.enqueue(new VideoFrame(this.canvasElement, { timestamp: this.timestamp, alpha: 'discard' }));
-  }
-
- private async initialVirtualBackground() {
-    const inputVideo = document.createElement('video');
-
-    const canvasElement = document.createElement('canvas');
-    const ctx = canvasElement.getContext('2d');
-
-      const segmentation = new SelfieSegmentation({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
-      });
-
-      segmentation.setOptions({
-        modelSelection: 1,
-      });
-
-      segmentation.onResults(results => {
-        const {isImage, imageInstance, blur} = this.virtualBackgroundState;
-        canvasElement.width = results.image.width;
-        canvasElement.height = results.image.height;
-      // STEP 1: Draw blurred background
-
-       ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-       ctx.save();
-
-      if(isImage) {
+      if(this.virtualBackgroundState.isImage) {
         ctx.filter = 'none';
-        ctx.drawImage(imageInstance, 0, 0, canvasElement.width, canvasElement.height);
+        ctx.drawImage(this.virtualBackgroundState.imageInstance, 0, 0, canvasRef.width, canvasRef.height);
       }else {
-        ctx.filter = `blur(${blur}px)`;
-        ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+        ctx.filter = `blur(${this.virtualBackgroundState.blur}px)`;
+        ctx.drawImage(results.image, 0, 0, canvasRef.width, canvasRef.height);
       }
-
       ctx.restore();
 
-      // STEP 2: Erase the person area (make it transparent)
+      // STEP 2: Remove person
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
+      ctx.drawImage(results.segmentationMask, 0, 0, width, height);
 
-      // STEP 3: Draw the original (sharp) person on top
+      // STEP 3: Draw person over background
       ctx.globalCompositeOperation = 'destination-over';
-      ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+      ctx.drawImage(results.image, 0, 0, width, height);
 
-      // STEP 4 (optional): Reset
       ctx.globalCompositeOperation = 'source-over';
-      });
+    });
 
-      const camera = new Camera(inputVideo, {
-        onFrame: async () => {
-          await segmentation.send({ image: inputVideo });
-        },
-        width: 640,
-        height: 480
-      });
-      camera.start();
+    this.selfieSegmentation = selfieSegmentation;
 
-    this.virtualBackgroundState.cameraInstance = camera;
-    const stream = canvasElement.captureStream(30); // 30 FPS\
-    // Here's the trick: stream canvas into video
-      JanusUtil.publishOwnFeed(stream)
-   }
+    const processLoop = async () => {
+      if (!inputVideoRef.paused && !inputVideoRef.ended) {
+        await selfieSegmentation.send({ image: inputVideoRef });
+        requestAnimationFrame(processLoop);
+      }
+    };
+
+    processLoop();
+  }
 
   setBackgroundImage() {
     const bgImage = new Image();
