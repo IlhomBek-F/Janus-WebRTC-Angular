@@ -53,7 +53,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   remoteFeed!: any;
   feeds: any = [];
 
-  remoteUserStream: { id: number; stream: MediaStream, talking: boolean }[] = [];
+  remoteUserStream: { id: number; stream: MediaStream, talking: boolean, name: string }[] = [];
   remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
   virtualBackgroundState = {blur: 0, isImage: false, imageInstance: null, cameraInstance: null};
@@ -123,13 +123,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   handleRemoteUserTrack() {
     this._videoRoomService.remoteUserTrack$
-      .subscribe((streamObj: {id: number, track: MediaStreamTrack}) => {
+      .subscribe((streamObj: {id: number, track: MediaStreamTrack, name: string}) => {
         const existStream = this.remoteUserStream.findIndex(({id}) => +id === streamObj.id);
 
         if(existStream === -1) {
           const stream = new MediaStream();
           stream.addTrack(streamObj.track);
-          this.remoteUserStream.push({id: streamObj.id, stream, talking: false})
+          this.remoteUserStream.push({id: streamObj.id, stream, talking: false, name: streamObj.name})
         }
 
           (this.remoteVideoRefs || [])?.forEach((videoEl, i) => {

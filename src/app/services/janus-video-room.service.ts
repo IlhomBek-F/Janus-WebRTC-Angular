@@ -15,7 +15,7 @@ export class JanusVideoRoomService {
   userType = UserTypeEnum.Admin; // Default to Admin
   screenStream = signal(null);
   localTrack$: Subject<MediaStreamTrack> = new Subject<MediaStreamTrack>();
-  remoteUserTrack$:Subject<{id: number, track: MediaStreamTrack}> = new Subject<{id: number, track: MediaStreamTrack}>();
+  remoteUserTrack$:Subject<{id: number, track: MediaStreamTrack, name: string}> = new Subject<{id: number, track: MediaStreamTrack, name: string}>();
   screenShareTrack$: Subject<MediaStream> = new Subject();
   remoteUserAudioTrack$: Subject<{id: number, track: MediaStreamTrack}> = new Subject<{id: number, track: MediaStreamTrack}>();
   userTalkingStatus$: Subject<{id: number, status: boolean}> = new Subject<{id: number, status: boolean}>();
@@ -214,7 +214,7 @@ export class JanusVideoRoomService {
             if(publisher.metadata?.isScreenShare) {
               this.screenShareTrack$.next(remoteStream)
             }else {
-              this.remoteUserTrack$.next({id: publisher.id, track});
+              this.remoteUserTrack$.next({id: publisher.id, track, name: publisher.display});
             }
           } else if(track.kind === 'audio') {
             let remoteStream = new MediaStream();

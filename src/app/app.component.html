@@ -47,7 +47,13 @@
   </div>
   @for (item of remoteUserStream; track $index) {
     <div>
-      <video autoPlay playsInline #remoteVideo [srcObject]="item.stream" class="w-[372px] h-[280px] rounded-md" [ngClass]="{'outline-2 outline-double outline-blue-800': item.talking}"></video>
+      <h1>{{item.name}}</h1>
+      <video autoPlay
+             #remoteVideo
+             playsInline
+             [srcObject]="item.stream"
+             class="w-[372px] h-[280px] rounded-md"
+             [ngClass]="{'outline-2 outline-double outline-blue-800': item.talking}"></video>
       <div class="flex gap-1">
         <button nz-button nzType="primary" class="w-full"><i class="pi pi-microphone text-[20px]"></i></button>
         <button nz-button nzType="primary" class="w-full"><i class="pi pi-camera text-[20px]"></i></button>
