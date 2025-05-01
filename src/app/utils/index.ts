@@ -58,13 +58,12 @@ static destroyRoom() {
           JanusUtil.pluginHandler.send({ message: publish, jsep: jsep });
         },
         error: (error: any) => {
-          this.publishOwnFeedWithoutCamera()
           console.error("WebRTC error:", error);
         },
       });
   }
 
-  private static publishOwnFeedWithoutCamera() {
+  static publishOwnFeedWithoutCamera() {
     JanusUtil.pluginHandler.createOffer({
       media: {
         audioSend: true,

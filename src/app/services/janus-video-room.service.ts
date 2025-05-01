@@ -68,7 +68,7 @@ export class JanusVideoRoomService {
           success: (response: any) => {
             this.roomId = response.room;
             JanusUtil.setRoomId(this.roomId);
-            this.joinRoom(this.roomId);
+            this.joinRoom(this.roomId, this.userInfo.hostName);
           },
           error: (error: any) => {
             console.error("🚨 Ошибка создания комнаты:", error);
@@ -105,7 +105,7 @@ export class JanusVideoRoomService {
       plugin: JanusPluginEnum.VideoRoom,
       success: (plugin: any) => {
         JanusUtil.setPlugin(plugin);
-        this.joinRoom(this.roomId);
+        this.joinRoom(this.roomId, this.userInfo.userName);
       },
       error(error) {
         console.error('Error attaching plugin:', error);
@@ -228,7 +228,7 @@ export class JanusVideoRoomService {
     })
   }
 
-  joinRoom(roomId: number) {
+  joinRoom(roomId: number, username: string) {
     console.log('Joining room:', roomId);
     JanusUtil.pluginHandler.send({
       message: {
@@ -237,7 +237,7 @@ export class JanusVideoRoomService {
         ptype: UserTypeEnum.Publisher,
         audiolevel_event: true,
         audio_active_packets: 7,
-        display: this.userInfo.userName,
+        display: username,
       },
     });
   }
