@@ -4,6 +4,7 @@ import {
   DestroyRef,
   ElementRef,
   inject,
+  OnDestroy,
   OnInit,
   QueryList,
   ViewChild,
@@ -33,7 +34,7 @@ import { SelfieSegmentation } from '@mediapipe/selfie_segmentation';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('localVideo', { static: true }) localVideoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('localCanvas', { static: true }) localCanvasElement!: ElementRef<HTMLCanvasElement>;
   @ViewChildren('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
@@ -60,11 +61,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   isLoading = false;
   isJoining = false;
 
-  selfieSegmentation = new SelfieSegmentation({
-    locateFile: (file) => {
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
-    }
-  });
+  selfieSegmentation: SelfieSegmentation
 
   constructor(private _videoRoomService: JanusVideoRoomService, private _destroyRef: DestroyRef) {
   }
@@ -73,9 +70,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.handleLocalUserTrack();
     this.handleShareScreenTrack();
     this.handleUserTalkingStatus();
-    this.selfieSegmentation.setOptions({
-      modelSelection: 0
-    });
+  }
+
+  ngOnDestroy(): void {
+    this.selfieSegmentation.close()
   }
 
   async turnOnCamera() {
