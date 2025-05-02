@@ -16,6 +16,9 @@
 <div id="container" class="bg-[red]"></div>
 <div class="flex flex-wrap items-center m-3 gap-3">
   <div>
+    @if (localVideo.srcObject) {
+      <h1>{{hostName || remoteUsername}}</h1>
+    }
     <video autoPlay playsInline #localVideo class="w-[372px] h-[280px] rounded-md"></video>
     <canvas  #localCanvas class="w-[372px] h-[280px] rounded-md hidden"></canvas>
     @if (localVideo.srcObject) {
