@@ -109,7 +109,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   handleLocalUserTrack() {
-    this._videoRoomService.localTrack$.subscribe((track: MediaStreamTrack) => {
+    this._videoRoomService.localTrack$
+    .subscribe((track: MediaStreamTrack) => {
       const localVideoElement = this.localVideoElement.nativeElement
       if(localVideoElement.srcObject) {
         (localVideoElement.srcObject as MediaStream).addTrack(track);
@@ -310,7 +311,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   shareScreen() {
     this._videoRoomService.userType = UserTypeEnum.ScreenShare;
-    this._videoRoomService.initialJanusInstance(this.onSuccessStream, {hostName: this.hostName, userName: this.remoteUsername});
+    this._videoRoomService.publishScreenShare();
   }
 
   stopShareScreen() {

@@ -23,6 +23,9 @@ export class JanusVideoRoomService {
 
   userInfo: {hostName: string, userName: string};
 
+  screenShareJanusInstance: Janus;
+  screenSharePluginHandle: any;
+
   initialJanusInstance(onSuccessStream, userInfo: {hostName: string, userName: string}) {
     this.onSuccessStream = onSuccessStream;
     this.userInfo = userInfo;
@@ -139,6 +142,109 @@ export class JanusVideoRoomService {
         }
       },
     });
+  }
+
+  publishScreenShare() {
+    Janus.init({
+      debug: true,
+      callback: () => {
+
+        if (!Janus.isWebrtcSupported()) {
+          alert("No WebRTC support");
+          return;
+      }
+
+        this.screenShareJanusInstance = new Janus({
+          server: serverUrl,
+          success: () => {
+            console.log("✅ Janus подключен");
+            this.attachScreenSharePlugin()
+          },
+          error: (error) => {
+            console.error("🚨 Ошибка подключения Janus:", error);
+          },
+        });
+      },
+    });
+  }
+
+  private attachScreenSharePlugin() {
+    const publisher: any = {
+      display: this.userInfo.userName + "_screen",
+      metadata: {isScreenShare: true},
+    }
+
+    this.screenShareJanusInstance.attach({
+      plugin: "janus.plugin.videoroom",
+      success: (pluginHandle) => {
+        this.screenSharePluginHandle = pluginHandle;
+
+        const subscribe = {
+          request: "join",
+          room: this.roomId,
+          ptype: "publisher",
+          metadata: publisher.metadata,
+          display: publisher.display,
+          quality: 0,
+        };
+
+        pluginHandle.send({
+          message: subscribe,
+        });
+      },
+      error: (error) => {
+        Janus.error("  -- Error attaching plugin...", error);
+        console.log("Error attaching plugin... " + error);
+      },
+      onmessage: (msg: any, jsep) => {
+        Janus.debug(" ::: Got a message (publisher) :::", msg);
+        var event = msg["videoroom"];
+        Janus.debug("Event: " + event);
+        if (event) {
+          if (event === "joined") {
+              publisher.id = msg.id
+
+              this.screenSharePluginHandle.createOffer({
+                media: {
+                  video: 'screen',
+                  audioSend: true,
+                  videoRecv: false,
+                }, // Screen sharing Publishers are sendonly
+                success: (jsep) => {
+                  Janus.debug("Got publisher SDP!", jsep);
+                  var publish = {
+                    request: "configure",
+                    audio: false,
+                    video: true,
+                  };
+                  this.screenSharePluginHandle.send({
+                    message: publish,
+                    jsep: jsep,
+                  });
+                },
+                error: (error) => {
+                  Janus.error("WebRTC error:", error);
+                  console.log("WebRTC error... " + error.message);
+                },
+              });
+          }
+        }
+        if (jsep) {
+          Janus.debug("Handling SDP as well...", jsep);
+          this.screenSharePluginHandle.handleRemoteJsep({
+            jsep: jsep,
+          });
+        }
+      },
+      onlocaltrack: (stream, on) => {
+        if(stream.kind === 'video' && on) {
+          // this.handleShareScreen(stream, publisher);
+          Janus.debug(" ::: Got a local screen stream :::", stream);
+        } else if(stream.kind === 'video' && !on) {
+
+        }
+      }
+    })
   }
 
   createRemotePublisherFeed(publishers: any) {
