@@ -83,12 +83,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.localVideoElement.nativeElement.srcObject = stream;
       this.intialVirtualBackgroundMode()
     } catch (error) {
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          JanusUtil.publishOwnFeedWithoutCamera()
-        alert('Permission denied error');
-      } else {
-        alert(`Error: ${error.name}`);
-      }
+      JanusUtil.publishOwnFeedWithoutCamera()
     }
   }
 
