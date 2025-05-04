@@ -65,7 +65,9 @@ export class JanusVideoRoomService {
             publishers: 10,
             audiolevel_event: true,
             audio_active_packets: 7,
+            notify_joining: true,
             display: this.userInfo.hostName,
+            allowed: ['test'],
             metadata: {isHost: true}
           },
           success: (response: any) => {
@@ -340,6 +342,7 @@ export class JanusVideoRoomService {
       message: {
         request: 'join',
         room: roomId,
+        token: 'test',
         ptype: UserTypeEnum.Publisher,
         audiolevel_event: true,
         audio_active_packets: 7,
