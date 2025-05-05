@@ -127,7 +127,7 @@ static destroyRoom() {
       plugin: "janus.plugin.videoroom",
       opaqueId: JanusUtil.screenName + Janus.randomString(4),
       success: (pluginHandle) => {
-        JanusUtil.screenSharePlugin = pluginHandle;
+        this.screenSharePlugin = pluginHandle;
 
         var subscribe = {
           request: "join",
@@ -246,11 +246,10 @@ static destroyRoom() {
   }
 
  static endScreenShare(onSuccess) {
-    // this.screenButtonBusy = true;
     const unpublish = {
       request: "unpublish",
     };
-    JanusUtil.screenSharePlugin.send({
+    this.screenSharePlugin.send({
       message: unpublish,
       success: () => {
         onSuccess()

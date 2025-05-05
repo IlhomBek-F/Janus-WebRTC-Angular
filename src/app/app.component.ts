@@ -38,7 +38,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('localVideo', { static: true }) localVideoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('localCanvas', { static: true }) localCanvasElement!: ElementRef<HTMLCanvasElement>;
   @ViewChildren('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
-  @ViewChild('screenShare', { static: true }) screenShare!: ElementRef<HTMLVideoElement>;
+  @ViewChild('screenShare', { static: false }) screenShare!: ElementRef<HTMLVideoElement>;
 
   private readonly message = inject(NzMessageService);
   public blurAmount: number = 0; // Control the amount of blur
@@ -46,7 +46,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   janusRef!: Janus;
   janusRoom!: Janus;
   remotePushedData = [];
-
+  isScreenShare = false;
+  isAvailableShareScreen = true;
   roomId: number;
   hostName='';
   remoteUsername = '';
@@ -99,7 +100,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.roomId = roomId;
     this.isLoading = false;
     this.isJoining = false;
-    this.turnOnCamera()
     // this.initialVirtualBackground();
   }
 
@@ -155,12 +155,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   handleShareScreenTrack() {
-    this._videoRoomService.screenShareTrack$.subscribe((stream: any) => {
-      if(this.screenShare.nativeElement.srcObject) {
-        (this.screenShare.nativeElement.srcObject as MediaStream).addTrack(stream);
-      } else {
-        this.screenShare.nativeElement.srcObject = stream;
-      }
+    this._videoRoomService.screenShareTrack$.subscribe((streamTrack: MediaStreamTrack) => {
+      this.isScreenShare = true;
+      this.isAvailableShareScreen = false;
+      setTimeout(() => {
+        if(this.screenShare.nativeElement.srcObject) {
+          (this.screenShare.nativeElement.srcObject as MediaStream).addTrack(streamTrack);
+        } else {
+          const stream = new MediaStream([streamTrack]);
+          this.screenShare.nativeElement.srcObject = stream;
+        }
+      }, 0);
     })
   }
 
@@ -310,7 +315,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   stopShareScreen() {
-    JanusUtil.endScreenShare(() => {
+    this._videoRoomService.endScreenShare(() => {
+      this.isScreenShare = false;
+      this.isAvailableShareScreen = true;
       this.screenShare.nativeElement.srcObject = null;
     })
   }

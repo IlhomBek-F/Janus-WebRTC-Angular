@@ -4,6 +4,7 @@ import { JanusUtil } from '../utils';
 import { JanusEventEnum, JanusPluginEnum, UserTypeEnum } from '../core/enums';
 import { Subject } from 'rxjs';
 
+const ROOM_TOKEN = 'test_token'; // Replace with your actual token
 const serverUrl = 'http://185.221.214.97:8088/janus';
 // const serverUrl = 'http://34.57.163.85:8088/janus';
 
@@ -16,7 +17,7 @@ export class JanusVideoRoomService {
   screenStream = signal(null);
   localTrack$: Subject<MediaStreamTrack> = new Subject<MediaStreamTrack>();
   remoteUserTrack$:Subject<{id: number, track: MediaStreamTrack, name: string}> = new Subject<{id: number, track: MediaStreamTrack, name: string}>();
-  screenShareTrack$: Subject<MediaStream> = new Subject();
+  screenShareTrack$: Subject<MediaStreamTrack> = new Subject();
   remoteUserAudioTrack$: Subject<{id: number, track: MediaStreamTrack}> = new Subject<{id: number, track: MediaStreamTrack}>();
   userTalkingStatus$: Subject<{id: number, status: boolean}> = new Subject<{id: number, status: boolean}>();
   onSuccessStream: Function;
@@ -67,7 +68,7 @@ export class JanusVideoRoomService {
             audio_active_packets: 7,
             notify_joining: true,
             display: this.userInfo.hostName,
-            allowed: ['test'],
+            allowed: [ROOM_TOKEN],
             metadata: {isHost: true}
           },
           success: (response: any) => {
@@ -86,7 +87,8 @@ export class JanusVideoRoomService {
       onmessage: (message: any, jsep: any) => {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
-          this.onSuccessStream(this.roomId)
+          this.onSuccessStream(this.roomId);
+          JanusUtil.publishOwnFeed()
         }
 
         if(message.publishers) {
@@ -185,6 +187,7 @@ export class JanusVideoRoomService {
           request: "join",
           room: this.roomId,
           ptype: "publisher",
+          token: ROOM_TOKEN,
           metadata: publisher.metadata,
           display: publisher.display,
           quality: 0,
@@ -239,12 +242,7 @@ export class JanusVideoRoomService {
         }
       },
       onlocaltrack: (stream, on) => {
-        if(stream.kind === 'video' && on) {
-          // this.handleShareScreen(stream, publisher);
-          Janus.debug(" ::: Got a local screen stream :::", stream);
-        } else if(stream.kind === 'video' && !on) {
-
-        }
+        // Share screen local track
       }
     })
   }
@@ -320,7 +318,7 @@ export class JanusVideoRoomService {
             remoteStream.addTrack(track);
 
             if(publisher.metadata?.isScreenShare) {
-              this.screenShareTrack$.next(remoteStream)
+              this.screenShareTrack$.next(track)
             }else {
               this.remoteUserTrack$.next({id: publisher.id, track, name: publisher.display});
             }
@@ -342,11 +340,23 @@ export class JanusVideoRoomService {
       message: {
         request: 'join',
         room: roomId,
-        token: 'test',
+        token: ROOM_TOKEN,
         ptype: UserTypeEnum.Publisher,
         audiolevel_event: true,
         audio_active_packets: 7,
         display: username,
+      },
+    });
+  }
+
+  endScreenShare(onSuccess) {
+    const unpublish = {
+      request: "unpublish",
+    };
+    this.screenSharePluginHandle.send({
+      message: unpublish,
+      success: () => {
+        onSuccess()
       },
     });
   }
