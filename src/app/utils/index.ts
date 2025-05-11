@@ -112,4 +112,28 @@ static destroyRoom() {
       },
     });
   }
+
+  static toggleLocalUserMic() {
+   let muted = this.pluginHandler.isAudioMuted();
+
+   if(muted) {
+      this.pluginHandler.unmuteAudio();
+    } else {
+      this.pluginHandler.muteAudio();
+    }
+
+  	muted = this.pluginHandler.isAudioMuted();
+  }
+
+  static toggleLocalUserCam() {
+    let muted = this.pluginHandler.isVideoMuted();
+
+   if(muted) {
+      this.pluginHandler.unmuteVideo();
+    } else {
+      this.pluginHandler.muteVideo();
+    }
+
+  	muted = this.pluginHandler.isAudioMuted();
+  }
 }

@@ -299,6 +299,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     JanusUtil.destroyRoom()
   }
 
+  toggleLocalUserMic() {
+    JanusUtil.toggleLocalUserMic();
+  }
+
+  toggleLocalUserCam() {
+    JanusUtil.toggleLocalUserCam();
+  }
+
   toggleRemoteUserMic(user: any) {
    this.remoteUserMediaState[user.id].isMicMute = !this.remoteUserMediaState[user.id].isMicMute;
    JanusUtil.toggleRemoteUserMic(user.id, user.isMute);
