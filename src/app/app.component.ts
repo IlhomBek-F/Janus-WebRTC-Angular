@@ -1,21 +1,17 @@
 import {
-  AfterViewInit,
   Component,
-  DestroyRef,
   ElementRef,
   inject,
+  NgZone,
   OnDestroy,
   OnInit,
-  QueryList,
   ViewChild,
-  ViewChildren,
 } from '@angular/core';
 import Janus from 'janus-gateway';
 import { FormsModule } from '@angular/forms';
 import { JanusUtil } from './utils';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { JanusVideoRoomService } from './services/janus-video-room.service';
-import { UserTypeEnum } from './core/enums';
 import { CommonModule } from '@angular/common';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -26,51 +22,52 @@ import "@tensorflow/tfjs-converter";
 import "@tensorflow/tfjs-backend-webgl";
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { SelfieSegmentation } from '@mediapipe/selfie_segmentation';
+import { HeaderComponent } from "./components/header/header.component";
+import { LocalUserStreamComponent } from "./components/local-user-stream/local-user-stream.component";
+import { RemoteUsersStreamComponent } from "./components/remote-users-stream/remote-users-stream.component";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NzIconModule,NzInputModule,NzToolTipModule, FormsModule, NzButtonModule, CommonModule, NzPopoverModule],
+  imports: [
+    NzIconModule,
+    NzInputModule,
+    NzToolTipModule,
+    FormsModule,
+    NzButtonModule,
+    CommonModule,
+    NzPopoverModule,
+    HeaderComponent,
+    LocalUserStreamComponent,
+    RemoteUsersStreamComponent
+],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('localVideo', { static: true }) localVideoElement!: ElementRef<HTMLVideoElement>;
+export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('localCanvas', { static: true }) localCanvasElement!: ElementRef<HTMLCanvasElement>;
-  @ViewChildren('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
   @ViewChild('screenShare', { static: false }) screenShare!: ElementRef<HTMLVideoElement>;
 
   private readonly message = inject(NzMessageService);
   public blurAmount: number = 0; // Control the amount of blur
-  visible = false;
   janusRef!: Janus;
   janusRoom!: Janus;
   remotePushedData = [];
-  isScreenShare = false;
-  isAvailableShareScreen = true;
-  roomId: number;
-  hostName='';
-  remoteUsername = '';
+
+  visible = false;
   remoteFeed!: any;
   feeds: any = [];
 
-  remoteUserStream: { id: number; stream: MediaStream, talking: boolean, name: string }[] = [];
-  remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
-  remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
-  virtualBackgroundState = {blur: 0, isImage: false, imageInstance: null, cameraInstance: null};
 
-  isLoading = false;
-  isJoining = false;
+  virtualBackgroundState = {blur: 0, isImage: false, imageInstance: null, cameraInstance: null};
 
   selfieSegmentation: SelfieSegmentation
 
-  constructor(private _videoRoomService: JanusVideoRoomService, private _destroyRef: DestroyRef) {
+  constructor(private _videoRoomService: JanusVideoRoomService, private _ngZone: NgZone) {
   }
 
   ngOnInit() {
-    this.handleLocalUserTrack();
     this.handleShareScreenTrack();
-    this.handleUserTalkingStatus();
   }
 
   ngOnDestroy(): void {
@@ -81,83 +78,64 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({video: true});
 
-      this.localVideoElement.nativeElement.srcObject = stream;
+      // this.localVideoElement.nativeElement.srcObject = stream;
       this.intialVirtualBackgroundMode()
     } catch (error) {
       JanusUtil.publishOwnFeedWithoutCamera()
     }
   }
 
-  clickMe(): void {
-    this.visible = false;
-  }
+  recordingStream: MediaStream = null;
+  mediarecorder: MediaRecorder = null;
 
-  ngAfterViewInit(): void {
-    this.handleRemoteUserTrack();
-  }
+  startRecording() {
+    this._ngZone.runOutsideAngular(async () => {
+   try {
+    const constraints = {
+      video: { frameRate: { ideal: 30 }, width: 1920, height: 1080 },
+      audio: true
+    };
 
-  onSuccessStream(roomId: number) {
-    this.roomId = roomId;
-    this.isLoading = false;
-    this.isJoining = false;
-    // this.initialVirtualBackground();
-  }
+    this.recordingStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+    this.mediarecorder = new MediaRecorder(this.recordingStream, { mimeType: 'video/webm;codecs=vp8,opus' });
+    this.mediarecorder.start();
 
-  handleLocalUserTrack() {
-    this._videoRoomService.localTrack$
-    .subscribe((track: MediaStreamTrack) => {
-      const localVideoElement = this.localVideoElement.nativeElement
-      if(localVideoElement.srcObject) {
-        (localVideoElement.srcObject as MediaStream).addTrack(track);
-      } else {
-        const stream = new MediaStream([track]);
-        localVideoElement.srcObject = stream;
-        this.blurAmount = 10;
-      }
+    const [video] = this.recordingStream.getVideoTracks();
+    video.addEventListener("ended", () => {
+      this.stopRecording();
     });
+
+    this.mediarecorder.addEventListener("dataavailable", (e) => {
+      this.downloadRecording(e.data);
+    });
+  } catch (error) {
+    console.error("Error al grabar la pantalla:", error);
   }
-
-  handleRemoteUserTrack() {
-    this._videoRoomService.remoteUserTrack$
-      .subscribe((streamObj: {id: number, track: MediaStreamTrack, name: string}) => {
-        const existStream = this.remoteUserStream.findIndex(({id}) => +id === streamObj.id);
-
-        if(existStream === -1) {
-          const stream = new MediaStream();
-          stream.addTrack(streamObj.track);
-          this.remoteUserStream.push({id: streamObj.id, stream, talking: false, name: streamObj.name})
-        }
-
-          (this.remoteVideoRefs || [])?.forEach((videoEl, i) => {
-            if(existStream > -1) {
-              (videoEl.nativeElement.srcObject as MediaStream).addTrack(streamObj.track)
-            } else {
-              const stream = new MediaStream();
-              stream.addTrack(streamObj.track);
-              videoEl.nativeElement.srcObject = stream;
-            }
-          });
-
-        this.remoteUserStream.forEach((user) => {
-          if(!this.remoteUserMediaState[user.id]) {
-            this.remoteUserMediaState[user.id] = {isCamMute: false, isMicMute: false}
-          }
-        })
     })
-
-    // this._videoRoomService.remoteUserAudioTrack$.pipe(
-    //   map((streamObj) => {
-    //     return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value, talking: false}));
-    //   })
-    // ).subscribe((streamObj) => {
-    //    this.remoteUserAudioStream = streamObj;
-    // })
   }
+
+  downloadRecording(data) {
+  const blob = new Blob([data], { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `lesson-${new Date().toISOString()}.webm`;
+  link.click();
+}
+
+stopRecording() {
+  if (this.mediarecorder) {
+    this.mediarecorder.stop();
+    this.mediarecorder = null;
+    this.recordingStream.getTracks().forEach(track => track.stop());
+    this.recordingStream = null;
+  }
+}
 
   handleShareScreenTrack() {
     this._videoRoomService.screenShareTrack$.subscribe((streamTrack: MediaStreamTrack) => {
-      this.isScreenShare = true;
-      this.isAvailableShareScreen = false;
+      // this.isScreenShare = true;
+      // this.isAvailableShareScreen = false;
       setTimeout(() => {
         if(this.screenShare.nativeElement.srcObject) {
           (this.screenShare.nativeElement.srcObject as MediaStream).addTrack(streamTrack);
@@ -167,16 +145,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }, 0);
     })
-  }
-
-  handleUserTalkingStatus() {
-    this._videoRoomService.userTalkingStatus$
-     .subscribe(({id, status}) => {
-      this.remoteUserStream = this.remoteUserStream.map((userData) => {
-         userData.talking = +userData.id === id ? status : userData.talking;
-         return userData;
-      })
-     })
   }
 
   handleVirtualBackground(blur: number) {
@@ -195,7 +163,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Mirror canvas to video output
     const outputStream = canvasRef.captureStream(25);
-    this.localVideoElement.nativeElement.srcObject = outputStream;
+    // this.localVideoElement.nativeElement.srcObject = outputStream;
     JanusUtil.publishOwnFeed(outputStream)
 
     const selfieSegmentation = new SelfieSegmentation({
@@ -264,37 +232,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private initialJanus() {
-    this._videoRoomService.initialJanusInstance(this.onSuccessStream.bind(this), {hostName: this.hostName, userName: this.remoteUsername})
-  }
-
-  createRoom() {
-    if(!this.hostName.trim().length) {
-      this.message.info('Please enter host name');
-      return;
-    }
-
-    this.isLoading = true;
-    this.initialJanus();
-  }
-
-  joinAsRemoteRoom() {
-    if(!this.remoteUsername.trim().length) {
-      this.message.info('Please enter user name');
-      return;
-    }
-
-    if(!this.roomId) {
-      this.message.info('Please enter room number');
-      return;
-    }
-
-    this._videoRoomService.roomId = +this.roomId;
-    this._videoRoomService.userType = UserTypeEnum.Publisher;
-    this.isJoining = true;
-    this.initialJanus()
-  }
-
   destroyRoom(id: string) : void {
     JanusUtil.destroyRoom()
   }
@@ -307,26 +244,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     JanusUtil.toggleLocalUserCam();
   }
 
-  toggleRemoteUserMic(user: any) {
-   this.remoteUserMediaState[user.id].isMicMute = !this.remoteUserMediaState[user.id].isMicMute;
-   JanusUtil.toggleRemoteUserMic(user.id, user.isMute);
-  }
+  // toggleRemoteUserMic(user: any) {
+  //  this.remoteUserMediaState[user.id].isMicMute = !this.remoteUserMediaState[user.id].isMicMute;
+  //  JanusUtil.toggleRemoteUserMic(user.id, user.isMute);
+  // }
 
-  toggleRemoteUserCam(user: any) {
-    this.remoteUserMediaState[user.id].isCamMute = !this.remoteUserMediaState[user.id].isCamMute;
-    JanusUtil.toggleRemoteUserCam(user.id, this.remoteUserMediaState[user.id].isCamMute);
-  }
-
-  shareScreen() {
-    this._videoRoomService.userType = UserTypeEnum.ScreenShare;
-    this._videoRoomService.publishScreenShare();
-  }
-
-  stopShareScreen() {
-    this._videoRoomService.endScreenShare(() => {
-      this.isScreenShare = false;
-      this.isAvailableShareScreen = true;
-      this.screenShare.nativeElement.srcObject = null;
-    })
-  }
+  // toggleRemoteUserCam(user: any) {
+  //   this.remoteUserMediaState[user.id].isCamMute = !this.remoteUserMediaState[user.id].isCamMute;
+  //   JanusUtil.toggleRemoteUserCam(user.id, this.remoteUserMediaState[user.id].isCamMute);
+  // }
 }

@@ -84,6 +84,12 @@ export class JanusVideoRoomService {
       error(error) {
         console.error('Error attaching plugin:', error);
       },
+      mediaState: function(medium, on, mid) {
+									Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium + " (mid=" + mid + ")");
+								},
+      webrtcState: (a) => {
+                console.log('Janus is ready to stream:', a);
+      },
       onmessage: (message: any, jsep: any) => {
         if(message.videoroom === JanusEventEnum.Joined) {
           console.log('Successfully joined room!');
