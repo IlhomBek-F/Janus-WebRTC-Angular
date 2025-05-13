@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Quer
 import { JanusVideoRoomService } from '../../services/janus-video-room.service';
 import { CommonModule } from '@angular/common';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 
 @Component({
   selector: 'app-remote-users-stream',
   standalone: true,
-  imports: [CommonModule, NzPopoverModule],
+  imports: [CommonModule, NzPopoverModule, NzButtonModule],
   templateUrl: './remote-users-stream.component.html',
   styleUrl: './remote-users-stream.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

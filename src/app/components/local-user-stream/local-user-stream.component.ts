@@ -28,6 +28,7 @@ export class LocalUserStreamComponent implements OnInit {
 
   ngOnInit(): void {
     this.handleLocalUserTrack();
+    this.handlePiPWindow()
   }
 
     handleLocalUserTrack() {
@@ -43,6 +44,34 @@ export class LocalUserStreamComponent implements OnInit {
 
       this._cdr.markForCheck()
     });
+  }
+
+  handlePiPWindow() {
+    document.addEventListener('visibilitychange', async (e) => {
+      if(document.visibilityState === 'hidden') {
+       await this.enterPiP()
+      } else if(document.pictureInPictureElement){
+        await this.exitPiP()
+      }
+    })
+  }
+
+async exitPiP() {
+  if (document.pictureInPictureElement) {
+    try {
+      await document.exitPictureInPicture();
+    } catch (err) {
+      console.error('Failed to exit Picture-in-Picture', err);
+    }
+  }
+}
+
+  async enterPiP() {
+    if (document.pictureInPictureEnabled && this.localVideoElement.nativeElement) {
+    this.localVideoElement.nativeElement.requestPictureInPicture()
+    } else {
+      console.warn('Picture-in-Picture is not supported or enabled in this browser.');
+    }
   }
 
   toggleLocalUserMic() {
