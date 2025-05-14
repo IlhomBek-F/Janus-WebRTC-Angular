@@ -15,12 +15,12 @@
 <nz-modal
       [(nzVisible)]="isExpandShareScreen"
       nzCentered
-      [nzWidth]="1050"
+      [nzWidth]="1350"
       [nzFooter]="null"
       (nzOnCancel)="isExpandShareScreen = false"
     >
       <ng-container *nzModalContent>
-        <video autoPlay playsInline #expandScreenShareVideo class="w-[1000px] h-[500px] rounded-md border-solid"></video>
+        <video autoPlay playsInline #expandScreenShareVideo class="w-[1300px] h-[595px] rounded-md border-solid object-cover"></video>
       </ng-container>
 </nz-modal>
 
