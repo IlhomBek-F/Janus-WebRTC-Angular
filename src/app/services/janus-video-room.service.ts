@@ -331,6 +331,7 @@ export class JanusVideoRoomService {
           } else if(track.kind === 'audio') {
             let remoteStream = new MediaStream();
             remoteStream.addTrack(track);
+            this.remoteUserAudioTrack$.next({id: publisher.id, track})
           }
         },
         error: function (error: any) {

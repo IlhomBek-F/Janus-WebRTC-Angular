@@ -2,7 +2,6 @@ import {  ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Eve
 import { JanusVideoRoomService } from '../../services/janus-video-room.service';
 import { JanusUtil } from '../../utils';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
-import { UserTypeEnum } from '../../core/enums';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 
 @Component({

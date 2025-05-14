@@ -14,8 +14,9 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 })
 export class RemoteUsersStreamComponent implements OnInit {
   @ViewChildren('remoteVideo') remoteVideoRefs: QueryList<ElementRef<HTMLVideoElement>>
+  @ViewChildren('remoteAudio') remoteAudioRefs: QueryList<ElementRef<HTMLAudioElement>>
 
-  remoteUserStream: { id: number; stream: MediaStream, talking: boolean, name: string }[] = [];
+  remoteUserStream: { id: number; stream: MediaStream, talking: boolean, name: string, audioStream?: MediaStream }[] = [];
   remoteUserAudioStream!: { id: string; stream: MediaStream, talking: boolean }[];
   remoteUserMediaState: Record<string, { isCamMute: boolean; isMicMute: boolean }> = {};
 
@@ -38,7 +39,7 @@ export class RemoteUsersStreamComponent implements OnInit {
         if(existStream === -1) {
           const stream = new MediaStream();
           stream.addTrack(streamObj.track);
-          this.remoteUserStream.push({id: streamObj.id, stream, talking: false, name: streamObj.name})
+          this.remoteUserStream.push({id: streamObj.id, stream, talking: false, name: streamObj.name, audioStream: null})
         }
 
           (this.remoteVideoRefs || [])?.forEach((videoEl, i) => {
@@ -60,13 +61,33 @@ export class RemoteUsersStreamComponent implements OnInit {
         this._cdr.markForCheck();
     })
 
-    // this._videoRoomService.remoteUserAudioTrack$.pipe(
-    //   map((streamObj) => {
-    //     return Object.entries(streamObj).map(([key, value]) => ({id: key, stream: value, talking: false}));
-    //   })
-    // ).subscribe((streamObj) => {
-    //    this.remoteUserAudioStream = streamObj;
-    // })
+    this._videoRoomService.remoteUserAudioTrack$.pipe(
+    ).subscribe((streamObj) => {
+        const existStream = this.remoteUserStream.find(({id}) => +id === streamObj.id);
+
+        if(!existStream?.audioStream) {
+           const stream = new MediaStream();
+           stream.addTrack(streamObj.track);
+
+           if(!existStream) {
+              this.remoteUserStream.push({id: streamObj.id, stream: null, talking: false, name: 'asdasd', audioStream: stream})
+           }else {
+             existStream.audioStream = stream;
+           }
+        }
+
+         (this.remoteAudioRefs || [])?.forEach((audioEl, i) => {
+            if(existStream.audioStream) {
+              (audioEl.nativeElement.srcObject as MediaStream).addTrack(streamObj.track)
+            } else {
+              const stream = new MediaStream();
+              stream.addTrack(streamObj.track);
+              audioEl.nativeElement.srcObject = stream;
+            }
+          });
+
+                  this._cdr.markForCheck();
+    })
   }
 
     handleUserTalkingStatus() {
