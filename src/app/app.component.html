@@ -7,9 +7,21 @@
 @if (isScreenShare) {
   <div class="absolute bottom-5 right-5 bg-black rounded">
     <i class="cursor-pointer z-10 pi pi-stop-circle absolute right-[10px] top-[10px] p-[5px] rounded bg-white text-red-600" (click)="stopShareScreen()"></i>
-    <i class="cursor-pointer z-10 pi pi-expand absolute right-[40px] top-[10px] p-[5px] rounded bg-white text-red-600"></i>
+    <i class="cursor-pointer z-10 pi pi-expand absolute right-[40px] top-[10px] p-[5px] rounded bg-white text-red-600" (click)="expandShareScreen()"></i>
     <video autoPlay playsInline #screenShare class="w-[372px] h-[280px] rounded-md"></video>
   </div>
 }
+
+<nz-modal
+      [(nzVisible)]="isExpandShareScreen"
+      nzCentered
+      [nzWidth]="1050"
+      [nzFooter]="null"
+      (nzOnCancel)="isExpandShareScreen = false"
+    >
+      <ng-container *nzModalContent>
+        <video autoPlay playsInline #expandScreenShareVideo class="w-[1000px] h-[500px] rounded-md border-solid"></video>
+      </ng-container>
+</nz-modal>
 
 

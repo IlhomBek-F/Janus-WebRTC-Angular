@@ -26,6 +26,7 @@ import { HeaderComponent } from "./components/header/header.component";
 import { LocalUserStreamComponent } from "./components/local-user-stream/local-user-stream.component";
 import { RemoteUsersStreamComponent } from "./components/remote-users-stream/remote-users-stream.component";
 import { UserTypeEnum } from './core/enums';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 
 @Component({
   selector: 'app-root',
@@ -40,7 +41,8 @@ import { UserTypeEnum } from './core/enums';
     NzPopoverModule,
     HeaderComponent,
     LocalUserStreamComponent,
-    RemoteUsersStreamComponent
+    RemoteUsersStreamComponent,
+    NzModalModule
 ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -48,6 +50,7 @@ import { UserTypeEnum } from './core/enums';
 export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('localCanvas', { static: true }) localCanvasElement!: ElementRef<HTMLCanvasElement>;
   @ViewChild('screenShare') screenShare!: ElementRef<HTMLVideoElement>;
+  @ViewChild('expandScreenShareVideo') expandScreenShareVideo!: ElementRef<HTMLVideoElement>;
 
   private readonly message = inject(NzMessageService);
   public blurAmount: number = 0; // Control the amount of blur
@@ -62,6 +65,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isScreenShare = false;
   isAvailableShareScreen = true;
   virtualBackgroundState = {blur: 0, isImage: false, imageInstance: null, cameraInstance: null};
+  isExpandShareScreen = false;
 
   selfieSegmentation: SelfieSegmentation
 
@@ -261,6 +265,13 @@ stopRecording() {
       this.isAvailableShareScreen = true;
       this.screenShare.nativeElement.srcObject = null;
     })
+  }
+
+  expandShareScreen() {
+   this.isExpandShareScreen = true;
+   setTimeout(() => {
+     this.expandScreenShareVideo.nativeElement.srcObject = this.screenShare.nativeElement.srcObject;
+   }, 0);
   }
 
   // toggleRemoteUserMic(user: any) {
