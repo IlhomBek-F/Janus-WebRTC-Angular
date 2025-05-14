@@ -319,7 +319,7 @@ export class JanusVideoRoomService {
         onremotetrack: (track, mid, on, metadata) => {
           console.log("  -- Remote track:", track, mid, on, metadata);
 
-          if (track.kind === "video") {
+          if (track.kind === "video" && on) {
             let remoteStream = new MediaStream();
             remoteStream.addTrack(track);
 

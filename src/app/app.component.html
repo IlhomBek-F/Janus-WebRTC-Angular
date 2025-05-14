@@ -1,15 +1,15 @@
 <app-header></app-header>
 <div class="flex flex-wrap items-center m-3 gap-3">
-  <app-local-user-stream></app-local-user-stream>
+  <app-local-user-stream (startShareScreen)="startShareScreen()" (stopShareScreen)="stopShareScreen()"></app-local-user-stream>
   <app-remote-users-stream></app-remote-users-stream>
 </div>
 
-<!-- @if (isScreenShare) {
+@if (isScreenShare) {
   <div class="absolute bottom-5 right-5 bg-black rounded">
     <i class="cursor-pointer z-10 pi pi-stop-circle absolute right-[10px] top-[10px] p-[5px] rounded bg-white text-red-600" (click)="stopShareScreen()"></i>
     <i class="cursor-pointer z-10 pi pi-expand absolute right-[40px] top-[10px] p-[5px] rounded bg-white text-red-600"></i>
     <video autoPlay playsInline #screenShare class="w-[372px] h-[280px] rounded-md"></video>
   </div>
-} -->
+}
 
 

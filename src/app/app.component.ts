@@ -25,6 +25,7 @@ import { SelfieSegmentation } from '@mediapipe/selfie_segmentation';
 import { HeaderComponent } from "./components/header/header.component";
 import { LocalUserStreamComponent } from "./components/local-user-stream/local-user-stream.component";
 import { RemoteUsersStreamComponent } from "./components/remote-users-stream/remote-users-stream.component";
+import { UserTypeEnum } from './core/enums';
 
 @Component({
   selector: 'app-root',
@@ -46,7 +47,7 @@ import { RemoteUsersStreamComponent } from "./components/remote-users-stream/rem
 })
 export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('localCanvas', { static: true }) localCanvasElement!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('screenShare', { static: false }) screenShare!: ElementRef<HTMLVideoElement>;
+  @ViewChild('screenShare') screenShare!: ElementRef<HTMLVideoElement>;
 
   private readonly message = inject(NzMessageService);
   public blurAmount: number = 0; // Control the amount of blur
@@ -58,7 +59,8 @@ export class AppComponent implements OnInit, OnDestroy {
   remoteFeed!: any;
   feeds: any = [];
 
-
+  isScreenShare = false;
+  isAvailableShareScreen = true;
   virtualBackgroundState = {blur: 0, isImage: false, imageInstance: null, cameraInstance: null};
 
   selfieSegmentation: SelfieSegmentation
@@ -134,8 +136,8 @@ stopRecording() {
 
   handleShareScreenTrack() {
     this._videoRoomService.screenShareTrack$.subscribe((streamTrack: MediaStreamTrack) => {
-      // this.isScreenShare = true;
-      // this.isAvailableShareScreen = false;
+      this.isScreenShare = true;
+      this.isAvailableShareScreen = false;
       setTimeout(() => {
         if(this.screenShare.nativeElement.srcObject) {
           (this.screenShare.nativeElement.srcObject as MediaStream).addTrack(streamTrack);
@@ -242,6 +244,23 @@ stopRecording() {
 
   toggleLocalUserCam() {
     JanusUtil.toggleLocalUserCam();
+  }
+
+  startShareScreen() {
+    if(this.screenShare) {
+     this.message.info('You are already sharing your screen');
+     return;
+    }
+    this._videoRoomService.userType = UserTypeEnum.ScreenShare;
+    this._videoRoomService.publishScreenShare();
+  }
+
+   stopShareScreen() {
+    this._videoRoomService.endScreenShare(() => {
+      this.isScreenShare = false;
+      this.isAvailableShareScreen = true;
+      this.screenShare.nativeElement.srcObject = null;
+    })
   }
 
   // toggleRemoteUserMic(user: any) {

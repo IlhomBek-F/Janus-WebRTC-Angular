@@ -1,4 +1,4 @@
-import {  ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, ViewChild, type OnInit } from '@angular/core';
+import {  ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, Output, ViewChild, type OnInit } from '@angular/core';
 import { JanusVideoRoomService } from '../../services/janus-video-room.service';
 import { JanusUtil } from '../../utils';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
@@ -15,11 +15,10 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 })
 export class LocalUserStreamComponent implements OnInit {
   @ViewChild('localVideo', { static: true }) localVideoElement!: ElementRef<HTMLVideoElement>;
-  @ViewChild('screenShare', { static: true }) screenShare!: ElementRef<HTMLVideoElement>;
+  @Output() startShareScreen  = new EventEmitter()
+  @Output() stopShareScreen  = new EventEmitter()
 
   visible = false;
-  isScreenShare = false;
-  isAvailableShareScreen = true;
 
   constructor(
     private _videoRoomService: JanusVideoRoomService,
@@ -28,7 +27,7 @@ export class LocalUserStreamComponent implements OnInit {
 
   ngOnInit(): void {
     this.handleLocalUserTrack();
-    this.handlePiPWindow()
+    this.handlePiPWindow();
   }
 
     handleLocalUserTrack() {
@@ -50,21 +49,9 @@ export class LocalUserStreamComponent implements OnInit {
     document.addEventListener('visibilitychange', async (e) => {
       if(document.visibilityState === 'hidden') {
        await this.enterPiP()
-      } else if(document.pictureInPictureElement){
-        await this.exitPiP()
       }
     })
   }
-
-async exitPiP() {
-  if (document.pictureInPictureElement) {
-    try {
-      await document.exitPictureInPicture();
-    } catch (err) {
-      console.error('Failed to exit Picture-in-Picture', err);
-    }
-  }
-}
 
   async enterPiP() {
     if (document.pictureInPictureEnabled && this.localVideoElement.nativeElement) {
@@ -81,17 +68,4 @@ async exitPiP() {
     toggleLocalUserCam() {
       JanusUtil.toggleLocalUserCam();
     }
-
-   shareScreen() {
-    this._videoRoomService.userType = UserTypeEnum.ScreenShare;
-    this._videoRoomService.publishScreenShare();
-  }
-
-  stopShareScreen() {
-    this._videoRoomService.endScreenShare(() => {
-      this.isScreenShare = false;
-      this.isAvailableShareScreen = true;
-      this.screenShare.nativeElement.srcObject = null;
-    })
-  }
 }
